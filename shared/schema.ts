@@ -226,6 +226,13 @@ export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
   duration: true,
   startTime: true,
   endTime: true,
+  createdBy: true,
+}).extend({
+  // Transform string dates to Date objects
+  dateTime: z.union([z.date(), z.string().transform((str) => new Date(str))]),
+  followUpDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
+  startTime: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
+  endTime: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
 });
 
 // Types
