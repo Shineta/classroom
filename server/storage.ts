@@ -208,6 +208,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateWalkthrough(id: string, walkthroughData: Partial<InsertWalkthrough>): Promise<Walkthrough> {
+    // Handle assignedReviewer validation - set to null if reviewer doesn't exist
+    if (walkthroughData.assignedReviewer) {
+      const reviewer = await db.query.users.findFirst({
+        where: eq(users.id, walkthroughData.assignedReviewer)
+      });
+      if (!reviewer) {
+        console.log(`Assigned reviewer ${walkthroughData.assignedReviewer} not found, setting to null`);
+        walkthroughData.assignedReviewer = null;
+      }
+    }
+    
     const [walkthrough] = await db
       .update(walkthroughs)
       .set({ ...walkthroughData, updatedAt: new Date() })

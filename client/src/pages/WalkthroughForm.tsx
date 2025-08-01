@@ -1001,10 +1001,7 @@ export default function WalkthroughForm() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {/* You would populate this with users who can review */}
-                                    <SelectItem value="reviewer1">Dr. Sarah Johnson</SelectItem>
-                                    <SelectItem value="reviewer2">Ms. Thompson</SelectItem>
-                                    <SelectItem value="reviewer3">Mr. Rodriguez</SelectItem>
+                                    <SelectItem value="9c7509e3-1f54-4e1a-ba38-2d91b7dcebfa">Admin User</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
