@@ -70,6 +70,7 @@ export default function WalkthroughForm() {
   const [selectedObservers, setSelectedObservers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [startTime] = useState(new Date());
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const walkthroughId = params?.id || editParams?.id;
   const isEditing = walkthroughId && walkthroughId !== "new";
@@ -179,7 +180,7 @@ export default function WalkthroughForm() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: FormData) => {
+    mutationFn: async (data: FormData & { isCompletion?: boolean }) => {
       console.log("Update mutation - Debug:", {
         walkthroughId,
         isEditing,
@@ -191,17 +192,29 @@ export default function WalkthroughForm() {
         throw new Error("No walkthrough ID available for update");
       }
       
+      const { isCompletion, ...updateData } = data;
       const response = await apiRequest("PUT", `/api/walkthroughs/${walkthroughId}`, {
-        ...data,
-        dateTime: new Date(data.dateTime).toISOString(),
-        followUpDate: data.followUpDate ? new Date(data.followUpDate).toISOString() : undefined,
+        ...updateData,
+        dateTime: new Date(updateData.dateTime).toISOString(),
+        followUpDate: updateData.followUpDate ? new Date(updateData.followUpDate).toISOString() : undefined,
       });
-      return response.json();
+      return { ...await response.json(), isCompletion };
     },
-    onSuccess: () => {
-      toast({ title: "Walkthrough updated successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs", walkthroughId] });
+    onSuccess: (data) => {
+      if (data.isCompletion) {
+        toast({ title: "Walkthrough completed successfully" });
+        queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs", walkthroughId] });
+        // Navigate to dashboard after completion
+        setLocation("/");
+      } else {
+        // Only show toast for manual saves, not auto-saves
+        if (!isAutoSaving) {
+          toast({ title: "Walkthrough updated successfully" });
+        }
+        queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs", walkthroughId] });
+      }
     },
     onError: (error) => {
       console.error("Error updating walkthrough:", {
@@ -280,7 +293,12 @@ export default function WalkthroughForm() {
       currentPath: window.location.pathname
     });
     const data = form.getValues();
-    onSubmit({ ...data, status: "completed" } as any);
+    
+    if (isEditing) {
+      updateMutation.mutate({ ...data, status: "completed", isCompletion: true } as any);
+    } else {
+      createMutation.mutate({ ...data, status: "completed" } as any);
+    }
   };
 
   // Handle lesson plan upload
@@ -307,6 +325,14 @@ export default function WalkthroughForm() {
         const { objectPath } = await response.json();
         form.setValue("lessonPlanUrl", objectPath);
         toast({ title: "Lesson plan uploaded successfully" });
+        
+        // Auto-save the form with the new file URL but don't show toast
+        if (isEditing) {
+          setIsAutoSaving(true);
+          const data = form.getValues();
+          updateMutation.mutate({ ...data, lessonPlanUrl: objectPath } as any);
+          setIsAutoSaving(false);
+        }
       } catch (error) {
         toast({
           title: "Error",
