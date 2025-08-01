@@ -10,6 +10,7 @@ import {
   boolean,
   real,
   pgEnum,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -121,7 +122,9 @@ export const walkthroughSessions = pgTable("walkthrough_sessions", {
   userId: varchar("user_id").notNull().references(() => users.id),
   lastSeen: timestamp("last_seen").defaultNow(),
   isActive: boolean("is_active").default(true),
-});
+}, (table) => ({
+  walkthroughUserUnique: unique().on(table.walkthroughId, table.userId),
+}));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

@@ -252,15 +252,37 @@ export class DatabaseStorage implements IStorage {
 
   // Collaboration operations
   async updateSession(walkthroughId: string, userId: string): Promise<WalkthroughSession> {
-    const [session] = await db
-      .insert(walkthroughSessions)
-      .values({ walkthroughId, userId, lastSeen: new Date(), isActive: true })
-      .onConflictDoUpdate({
-        target: [walkthroughSessions.walkthroughId, walkthroughSessions.userId],
-        set: { lastSeen: new Date(), isActive: true },
-      })
-      .returning();
-    return session;
+    // First try to update existing session
+    const existing = await db
+      .select()
+      .from(walkthroughSessions)
+      .where(
+        and(
+          eq(walkthroughSessions.walkthroughId, walkthroughId),
+          eq(walkthroughSessions.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      const [session] = await db
+        .update(walkthroughSessions)
+        .set({ lastSeen: new Date(), isActive: true })
+        .where(
+          and(
+            eq(walkthroughSessions.walkthroughId, walkthroughId),
+            eq(walkthroughSessions.userId, userId)
+          )
+        )
+        .returning();
+      return session;
+    } else {
+      const [session] = await db
+        .insert(walkthroughSessions)
+        .values({ walkthroughId, userId, lastSeen: new Date(), isActive: true })
+        .returning();
+      return session;
+    }
   }
 
   async getActiveSessions(walkthroughId: string): Promise<(WalkthroughSession & { user: User })[]> {

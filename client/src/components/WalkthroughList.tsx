@@ -239,7 +239,7 @@ export default function WalkthroughList({ walkthroughs, loading, filters }: Walk
                       <Eye className="w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href={`/walkthrough/${walkthrough.id}`}>
+                  <Link href={`/walkthrough/${walkthrough.id}/edit`}>
                     <Button variant="ghost" size="sm">
                       <Edit className="w-4 h-4" />
                     </Button>
