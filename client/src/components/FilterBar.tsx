@@ -25,7 +25,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
   });
 
   const handleFilterChange = (key: string, value: string) => {
-    onFiltersChange({ ...filters, [key]: value });
+    onFiltersChange({ ...filters, [key]: value === "all" ? "" : value });
   };
 
   return (
@@ -56,7 +56,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
                 <SelectValue placeholder="All Teachers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Teachers</SelectItem>
+                <SelectItem value="all">All Teachers</SelectItem>
                 {teachers?.map((teacher) => (
                   <SelectItem key={teacher.id} value={teacher.id}>
                     {teacher.firstName} {teacher.lastName}
@@ -76,7 +76,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
                 <SelectValue placeholder="All Subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Subjects</SelectItem>
+                <SelectItem value="all">All Subjects</SelectItem>
                 <SelectItem value="Mathematics">Mathematics</SelectItem>
                 <SelectItem value="English Language Arts">English Language Arts</SelectItem>
                 <SelectItem value="Science">Science</SelectItem>
