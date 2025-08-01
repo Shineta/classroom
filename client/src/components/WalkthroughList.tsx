@@ -64,7 +64,7 @@ export default function WalkthroughList({ walkthroughs, loading, filters }: Walk
     return true;
   });
 
-  const getStatusBadge = (status: string, followUpNeeded?: boolean) => {
+  const getStatusBadge = (status: string | null, followUpNeeded?: boolean) => {
     if (status === "completed" && followUpNeeded) {
       return (
         <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
@@ -108,10 +108,12 @@ export default function WalkthroughList({ walkthroughs, loading, filters }: Walk
     );
   };
 
-  const getEngagementStars = (level?: string) => {
+  const getEngagementStars = (level?: string | null) => {
     if (!level) return null;
     
     const rating = parseInt(level);
+    if (isNaN(rating)) return null;
+    
     return (
       <div className="flex items-center">
         <div className="flex space-x-1">
@@ -231,7 +233,7 @@ export default function WalkthroughList({ walkthroughs, loading, filters }: Walk
                   {getEngagementStars(walkthrough.engagementLevel)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {getStatusBadge(walkthrough.status, walkthrough.followUpNeeded)}
+                  {getStatusBadge(walkthrough.status, walkthrough.followUpNeeded || false)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <Link href={`/walkthrough/${walkthrough.id}`}>

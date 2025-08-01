@@ -114,12 +114,7 @@ export default function WalkthroughEdit() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <WalkthroughForm
-          walkthrough={walkthrough}
-          onSubmit={handleSubmit}
-          isLoading={updateMutation.isPending}
-          mode="edit"
-        />
+        <WalkthroughForm />
       </div>
     </div>
   );

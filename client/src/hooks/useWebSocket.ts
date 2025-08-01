@@ -60,13 +60,14 @@ export function useWebSocket(walkthroughId?: string) {
         }
       };
 
-      newSocket.onclose = () => {
-        console.log('WebSocket disconnected');
+      newSocket.onclose = (event) => {
+        console.log('WebSocket disconnected', event.code, event.reason);
         setConnectionStatus('disconnected');
+        setSocket(null);
         
-        // Attempt to reconnect with exponential backoff
-        if (reconnectAttemptsRef.current < 5) {
-          const delay = Math.pow(2, reconnectAttemptsRef.current) * 1000;
+        // Only attempt to reconnect for certain close codes and if not intentionally closed
+        if (event.code !== 1000 && reconnectAttemptsRef.current < 3) {
+          const delay = Math.pow(2, reconnectAttemptsRef.current) * 1000 + Math.random() * 1000;
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current++;
             connect();
@@ -87,13 +88,19 @@ export function useWebSocket(walkthroughId?: string) {
   }, [user, walkthroughId]);
 
   const disconnect = useCallback(() => {
-    if (socket && user && walkthroughId) {
-      socket.send(JSON.stringify({
-        type: 'leave-walkthrough',
-        walkthroughId,
-        userId: user.id,
-      }));
-      socket.close();
+    if (socket) {
+      try {
+        if (socket.readyState === WebSocket.OPEN && user && walkthroughId) {
+          socket.send(JSON.stringify({
+            type: 'leave-walkthrough',
+            walkthroughId,
+            userId: user.id,
+          }));
+        }
+        socket.close();
+      } catch (error) {
+        console.warn('Error during WebSocket disconnect:', error);
+      }
     }
     setSocket(null);
     setConnectionStatus('disconnected');
@@ -118,7 +125,7 @@ export function useWebSocket(walkthroughId?: string) {
     return () => {
       disconnect();
     };
-  }, [user, walkthroughId, connect, disconnect]);
+  }, [user, walkthroughId]);
 
   // Cleanup on unmount
   useEffect(() => {

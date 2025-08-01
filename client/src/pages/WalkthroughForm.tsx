@@ -222,7 +222,7 @@ export default function WalkthroughForm() {
         walkthroughId,
         fieldName,
         fieldValue: value,
-        userId: user.id,
+        userId: user?.id || '',
       });
     }
   };
@@ -658,7 +658,10 @@ export default function WalkthroughForm() {
                               ...form.watch("behaviorRoutines"),
                               notes: e.target.value 
                             };
-                            form.setValue("behaviorRoutines", newValue);
+                            form.setValue("behaviorRoutines", {
+                              routines: form.watch("behaviorRoutines")?.routines || [],
+                              notes: e.target.value
+                            });
                             handleFieldChange("behaviorRoutines", newValue);
                           }}
                         />
@@ -831,7 +834,7 @@ export default function WalkthroughForm() {
                                 form.setValue("effectivenessRatings", newRatings);
                                 handleFieldChange("effectivenessRatings", newRatings);
                               }}
-                              defaultValue={form.watch("effectivenessRatings")?.[indicator.key as keyof typeof form.watch] as string}
+                              defaultValue={form.watch("effectivenessRatings")?.[indicator.key as any] as string}
                             >
                               <SelectTrigger className="w-40">
                                 <SelectValue />
