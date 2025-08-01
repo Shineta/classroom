@@ -61,6 +61,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function WalkthroughForm() {
   const [, params] = useRoute("/walkthrough/:id");
+  const [, editParams] = useRoute("/walkthrough/:id/edit");
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -70,8 +71,16 @@ export default function WalkthroughForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [startTime] = useState(new Date());
 
-  const isEditing = params?.id !== "new";
-  const walkthroughId = isEditing ? params?.id : undefined;
+  const walkthroughId = params?.id || editParams?.id;
+  const isEditing = walkthroughId && walkthroughId !== "new";
+  
+  console.log("WalkthroughForm Debug:", {
+    params,
+    editParams,
+    walkthroughId,
+    isEditing,
+    currentPath: window.location.pathname
+  });
 
   // WebSocket for real-time collaboration
   const { sendMessage, lastMessage, activeSessions } = useWebSocket(walkthroughId);
@@ -171,6 +180,17 @@ export default function WalkthroughForm() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log("Update mutation - Debug:", {
+        walkthroughId,
+        isEditing,
+        data,
+        url: `/api/walkthroughs/${walkthroughId}`
+      });
+      
+      if (!walkthroughId) {
+        throw new Error("No walkthrough ID available for update");
+      }
+      
       const response = await apiRequest("PUT", `/api/walkthroughs/${walkthroughId}`, {
         ...data,
         dateTime: new Date(data.dateTime).toISOString(),
@@ -184,6 +204,12 @@ export default function WalkthroughForm() {
       queryClient.invalidateQueries({ queryKey: ["/api/walkthroughs", walkthroughId] });
     },
     onError: (error) => {
+      console.error("Error updating walkthrough:", {
+        error,
+        walkthroughId,
+        isEditing,
+        errorMessage: (error as Error).message
+      });
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -195,7 +221,7 @@ export default function WalkthroughForm() {
       }
       toast({
         title: "Error",
-        description: "Failed to update walkthrough",
+        description: `Failed to update walkthrough: ${(error as Error).message || 'Unknown error'}`,
         variant: "destructive",
       });
     },
@@ -247,6 +273,12 @@ export default function WalkthroughForm() {
   };
 
   const handleComplete = () => {
+    console.log("Complete Walkthrough clicked - Debug:", {
+      walkthroughId,
+      isEditing,
+      formData: form.getValues(),
+      currentPath: window.location.pathname
+    });
     const data = form.getValues();
     onSubmit({ ...data, status: "completed" } as any);
   };
