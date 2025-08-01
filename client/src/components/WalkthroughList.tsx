@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Edit, Download, CheckCircle, Clock, Star } from "lucide-react";
+import { Eye, Edit, Download, CheckCircle, Clock, Star, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import type { WalkthroughWithDetails } from "@shared/schema";
 
@@ -18,6 +18,20 @@ interface WalkthroughListProps {
 }
 
 export default function WalkthroughList({ walkthroughs, loading, filters }: WalkthroughListProps) {
+  if (loading) {
+    return <div className="text-center py-8">Loading walkthroughs...</div>;
+  }
+
+  if (!walkthroughs || walkthroughs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <ClipboardList className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No walkthroughs</h3>
+        <p className="mt-1 text-sm text-gray-500">Get started by creating a new walkthrough.</p>
+      </div>
+    );
+  }
+
   // Filter walkthroughs based on search and filters
   const filteredWalkthroughs = walkthroughs.filter((walkthrough) => {
     if (filters.search) {

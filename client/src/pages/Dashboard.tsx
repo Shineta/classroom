@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { ClipboardCheck, Plus } from "lucide-react";
+import { ClipboardCheck, Plus, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import StatsCards from "@/components/StatsCards";
 import FilterBar from "@/components/FilterBar";
 import WalkthroughList from "@/components/WalkthroughList";
 import type { WalkthroughWithDetails } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { toast } = useToast();
   const [filters, setFilters] = useState({
     search: "",
     teacherId: "",
@@ -21,39 +19,20 @@ export default function Dashboard() {
     dateRange: "this-week",
   });
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, authLoading, toast]);
-
-  const { data: walkthroughs, isLoading: walkthroughsLoading, error } = useQuery({
-    queryKey: ["/api/walkthroughs", filters],
+  const { data: walkthroughs, isLoading: walkthroughsLoading } = useQuery({
+    queryKey: ["/api/walkthroughs"],
     enabled: isAuthenticated,
-    retry: false,
   });
 
-  useEffect(() => {
-    if (error && isUnauthorizedError(error as Error)) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/logout");
+      queryClient.clear();
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
-  }, [error, toast]);
+  };
 
   if (authLoading) {
     return (
@@ -67,7 +46,7 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return (
@@ -84,22 +63,15 @@ export default function Dashboard() {
               <span className="text-sm text-gray-600">
                 Welcome, {user?.firstName} {user?.lastName}
               </span>
-              {user?.profileImageUrl ? (
-                <img 
-                  src={user.profileImageUrl} 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </div>
-              )}
+              <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </div>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={handleLogout}
               >
+                <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
               </Button>
             </div>
@@ -132,7 +104,7 @@ export default function Dashboard() {
 
         {/* Walkthrough List */}
         <WalkthroughList 
-          walkthroughs={walkthroughs as WalkthroughWithDetails[] || []}
+          walkthroughs={walkthroughs || []}
           loading={walkthroughsLoading}
           filters={filters}
         />
