@@ -2,26 +2,16 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
 import { insertTeacherSchema, insertWalkthroughSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Auth routes are handled in setupAuth
 
   // Teacher routes
   app.get("/api/teachers", isAuthenticated, async (req, res) => {
@@ -115,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/walkthroughs", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const walkthroughData = insertWalkthroughSchema.parse({
         ...req.body,
         createdBy: userId,
@@ -143,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/walkthroughs/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const walkthrough = await storage.getWalkthrough(req.params.id);
       
       if (!walkthrough) {
@@ -204,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/walkthroughs/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const walkthrough = await storage.getWalkthrough(req.params.id);
       
       if (!walkthrough) {
@@ -238,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Statistics route
   app.get("/api/stats", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const stats = await storage.getWalkthroughStats(userId);
       res.json(stats);
     } catch (error) {
@@ -265,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "lessonPlanURL is required" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const objectStorageService = new ObjectStorageService();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.lessonPlanURL,
@@ -285,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve private objects
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const objectStorageService = new ObjectStorageService();
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
       

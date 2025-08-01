@@ -4,22 +4,34 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
-import Landing from "@/pages/Landing";
+import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Dashboard";
 import WalkthroughForm from "@/pages/WalkthroughForm";
 import NotFound from "@/pages/not-found";
+import { Loader2 } from "lucide-react";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+      {!isAuthenticated ? (
+        <>
+          <Route path="/auth" component={AuthPage} />
+          <Route path="/" component={AuthPage} />
+        </>
       ) : (
         <>
           <Route path="/" component={Dashboard} />
-          <Route path="/walkthrough/:id" component={WalkthroughForm} />
+          <Route path="/walkthrough/:id?" component={WalkthroughForm} />
         </>
       )}
       <Route component={NotFound} />

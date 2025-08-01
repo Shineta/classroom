@@ -25,12 +25,14 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (required for Replit Auth)
+// User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique().notNull(),
+  password: varchar("password").notNull(),
   email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").default("observer"), // observer, admin, coach
   createdAt: timestamp("created_at").defaultNow(),
@@ -175,6 +177,21 @@ export const walkthroughSessionsRelations = relations(walkthroughSessions, ({ on
 }));
 
 // Insert schemas
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  profileImageUrl: true,
+  role: true,
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
 export const insertTeacherSchema = createInsertSchema(teachers).pick({
   firstName: true,
   lastName: true,
@@ -214,6 +231,8 @@ export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type LoginCredentials = z.infer<typeof loginSchema>;
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type Teacher = typeof teachers.$inferSelect;
 export type InsertWalkthrough = z.infer<typeof insertWalkthroughSchema>;
