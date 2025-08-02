@@ -17,6 +17,7 @@ The platform serves three main user roles: observers (who conduct walkthroughs),
   - Added smart auto-save after file uploads without showing redundant success toasts
 - **Improved Real-time Collaboration**: Fixed WebSocket connection handling and error recovery
 - **Database Validation**: Added robust validation for user references and foreign key constraints
+- **Teachers Management**: Updated teacher roster to include Claude Hawkins and Antonio Cea, with previous teachers marked inactive
 
 ## User Preferences
 
