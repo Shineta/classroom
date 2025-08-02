@@ -140,11 +140,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Walkthrough not found" });
       }
 
-      // Check if user is creator or observer
+      // Check if user is creator, assigned observer, admin, or has observer/coach role
       const isCreator = walkthrough.createdBy === userId;
-      const isObserver = walkthrough.observers.some(obs => obs.observerId === userId);
+      const isAssignedObserver = walkthrough.observers.some(obs => obs.observerId === userId);
+      const isAdmin = req.user.role === 'admin';
+      const isObserverRole = req.user.role === 'observer';
+      const isCoach = req.user.role === 'coach';
       
-      if (!isCreator && !isObserver) {
+      if (!isCreator && !isAssignedObserver && !isAdmin && !isObserverRole && !isCoach) {
         return res.status(403).json({ message: "Not authorized to edit this walkthrough" });
       }
 
