@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { ClipboardCheck, Plus, LogOut } from "lucide-react";
+import { ClipboardCheck, Plus, LogOut, FileText, CheckSquare } from "lucide-react";
 import { Link } from "wouter";
 import StatsCards from "@/components/StatsCards";
 import FilterBar from "@/components/FilterBar";
 import WalkthroughList from "@/components/WalkthroughList";
+import ReviewDashboard from "@/components/ReviewDashboard";
 import type { WalkthroughWithDetails } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -97,18 +99,38 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <StatsCards />
+        {/* Main Dashboard Content */}
+        <Tabs defaultValue="walkthroughs" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="walkthroughs" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              My Walkthroughs
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="flex items-center gap-2">
+              <CheckSquare className="w-4 h-4" />
+              Review Dashboard
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <FilterBar filters={filters} onFiltersChange={setFilters} />
+          <TabsContent value="walkthroughs" className="space-y-6">
+            {/* Statistics Cards */}
+            <StatsCards />
 
-        {/* Walkthrough List */}
-        <WalkthroughList 
-          walkthroughs={walkthroughs || []}
-          loading={walkthroughsLoading}
-          filters={filters}
-        />
+            {/* Filters */}
+            <FilterBar filters={filters} onFiltersChange={setFilters} />
+
+            {/* Walkthrough List */}
+            <WalkthroughList 
+              walkthroughs={walkthroughs || []}
+              loading={walkthroughsLoading}
+              filters={filters}
+            />
+          </TabsContent>
+
+          <TabsContent value="reviews" className="space-y-6">
+            <ReviewDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

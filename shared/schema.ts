@@ -69,6 +69,7 @@ export const transitionsEnum = pgEnum("transitions", ["smooth", "needs-improveme
 export const effectivenessRatingEnum = pgEnum("effectiveness_rating", ["excellent", "good", "needs-improvement", "poor"]);
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
 export const statusEnum = pgEnum("status", ["draft", "completed", "follow-up-needed"]);
+export const reviewStatusEnum = pgEnum("review_status", ["pending", "in-progress", "completed", "not-required"]);
 
 // Walkthroughs table
 export const walkthroughs = pgTable("walkthroughs", {
@@ -106,6 +107,14 @@ export const walkthroughs = pgTable("walkthroughs", {
   assignedReviewer: varchar("assigned_reviewer").references(() => users.id),
   followUpDate: timestamp("follow_up_date"),
   priority: priorityEnum("priority"),
+  
+  // Review Workflow
+  reviewStatus: reviewStatusEnum("review_status").default("not-required"),
+  reviewStartedAt: timestamp("review_started_at"),
+  reviewCompletedAt: timestamp("review_completed_at"),
+  reviewerFeedback: text("reviewer_feedback"),
+  reviewerComments: text("reviewer_comments"),
+  notificationSent: boolean("notification_sent").default(false),
   
   // Metadata
   status: statusEnum("status").default("draft"),
@@ -253,6 +262,9 @@ export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
   startTime: true,
   endTime: true,
   createdBy: true,
+  reviewStatus: true,
+  reviewerFeedback: true,
+  reviewerComments: true,
 }).extend({
   // Transform string dates to Date objects
   dateTime: z.union([z.date(), z.string().transform((str) => new Date(str))]),

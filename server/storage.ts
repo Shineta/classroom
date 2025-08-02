@@ -50,9 +50,20 @@ export interface IStorage {
     endDate?: Date;
     status?: string;
     createdBy?: string;
+    reviewStatus?: string;
+    assignedReviewer?: string;
+    followUpNeeded?: boolean;
   }): Promise<WalkthroughWithDetails[]>;
   updateWalkthrough(id: string, walkthrough: Partial<InsertWalkthrough>): Promise<Walkthrough>;
   deleteWalkthrough(id: string): Promise<void>;
+  
+  // Review workflow operations
+  startReview(walkthroughId: string, reviewerId: string): Promise<Walkthrough>;
+  completeReview(walkthroughId: string, reviewData: {
+    reviewerFeedback?: string;
+    reviewerComments?: string;
+  }): Promise<Walkthrough>;
+  getWalkthroughsNeedingReview(reviewerId: string): Promise<WalkthroughWithDetails[]>;
   
   // Observer operations
   addObserver(walkthroughId: string, observerId: string): Promise<WalkthroughObserver>;
@@ -195,6 +206,9 @@ export class DatabaseStorage implements IStorage {
     endDate?: Date;
     status?: string;
     createdBy?: string;
+    reviewStatus?: string;
+    assignedReviewer?: string;
+    followUpNeeded?: boolean;
   } = {}): Promise<WalkthroughWithDetails[]> {
     const conditions = [];
     
@@ -215,6 +229,15 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters.createdBy) {
       conditions.push(eq(walkthroughs.createdBy, filters.createdBy));
+    }
+    if (filters.reviewStatus) {
+      conditions.push(eq(walkthroughs.reviewStatus, filters.reviewStatus as any));
+    }
+    if (filters.assignedReviewer) {
+      conditions.push(eq(walkthroughs.assignedReviewer, filters.assignedReviewer));
+    }
+    if (filters.followUpNeeded !== undefined) {
+      conditions.push(eq(walkthroughs.followUpNeeded, filters.followUpNeeded));
     }
 
     const result = await db.query.walkthroughs.findMany({
@@ -262,6 +285,62 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWalkthrough(id: string): Promise<void> {
     await db.delete(walkthroughs).where(eq(walkthroughs.id, id));
+  }
+
+  // Review workflow operations
+  async startReview(walkthroughId: string, reviewerId: string): Promise<Walkthrough> {
+    const [walkthrough] = await db
+      .update(walkthroughs)
+      .set({
+        reviewStatus: "in-progress",
+        reviewStartedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(walkthroughs.id, walkthroughId))
+      .returning();
+    return walkthrough;
+  }
+
+  async completeReview(walkthroughId: string, reviewData: {
+    reviewerFeedback?: string;
+    reviewerComments?: string;
+  }): Promise<Walkthrough> {
+    const [walkthrough] = await db
+      .update(walkthroughs)
+      .set({
+        reviewStatus: "completed",
+        reviewCompletedAt: new Date(),
+        reviewerFeedback: reviewData.reviewerFeedback,
+        reviewerComments: reviewData.reviewerComments,
+        updatedAt: new Date(),
+      })
+      .where(eq(walkthroughs.id, walkthroughId))
+      .returning();
+    return walkthrough;
+  }
+
+  async getWalkthroughsNeedingReview(reviewerId: string): Promise<WalkthroughWithDetails[]> {
+    const result = await db.query.walkthroughs.findMany({
+      where: and(
+        eq(walkthroughs.assignedReviewer, reviewerId),
+        eq(walkthroughs.reviewStatus, "pending"),
+        eq(walkthroughs.followUpNeeded, true)
+      ),
+      with: {
+        teacher: true,
+        location: true,
+        creator: true,
+        reviewer: true,
+        observers: {
+          with: {
+            observer: true,
+          },
+        },
+      },
+      orderBy: desc(walkthroughs.followUpDate),
+    });
+    
+    return result as WalkthroughWithDetails[];
   }
 
   // Observer operations
@@ -413,6 +492,64 @@ export class DatabaseStorage implements IStorage {
         sql`${users.firstName} ILIKE ${`%${query}%`} OR ${users.lastName} ILIKE ${`%${query}%`} OR ${users.email} ILIKE ${`%${query}%`}`
       )
       .orderBy(users.firstName, users.lastName);
+  }
+
+  // Review workflow methods
+  async getWalkthroughsNeedingReview(reviewerId: string): Promise<WalkthroughWithDetails[]> {
+    const result = await db.query.walkthroughs.findMany({
+      where: and(
+        eq(walkthroughs.assignedReviewer, reviewerId),
+        eq(walkthroughs.reviewStatus, "pending")
+      ),
+      with: {
+        teacher: true,
+        location: true,
+        creator: true,
+        reviewer: true,
+        observers: {
+          with: {
+            observer: true,
+          },
+        },
+      },
+      orderBy: desc(walkthroughs.dateTime),
+    });
+    
+    return result as WalkthroughWithDetails[];
+  }
+
+  async startReview(walkthroughId: string, reviewerId: string): Promise<Walkthrough> {
+    const [walkthrough] = await db
+      .update(walkthroughs)
+      .set({
+        reviewStatus: "in-progress",
+        reviewStartedAt: new Date(),
+      })
+      .where(and(
+        eq(walkthroughs.id, walkthroughId),
+        eq(walkthroughs.assignedReviewer, reviewerId)
+      ))
+      .returning();
+    
+    return walkthrough;
+  }
+
+  async completeReview(walkthroughId: string, reviewData: {
+    reviewerFeedback?: string;
+    reviewerComments?: string;
+  }): Promise<Walkthrough> {
+    const [walkthrough] = await db
+      .update(walkthroughs)
+      .set({
+        reviewStatus: "completed",
+        reviewCompletedAt: new Date(),
+        reviewerFeedback: reviewData.reviewerFeedback,
+        reviewerComments: reviewData.reviewerComments,
+      })
+      .where(eq(walkthroughs.id, walkthroughId))
+      .returning();
+    
+    return walkthrough;
   }
 }
 

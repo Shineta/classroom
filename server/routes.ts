@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
 import { aiService } from "./aiService";
+import { emailService } from "./emailService";
 import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -87,6 +88,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Review workflow routes
+  app.get("/api/reviews/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const pendingReviews = await storage.getWalkthroughsNeedingReview(userId);
+      res.json(pendingReviews);
+    } catch (error) {
+      console.error("Error fetching pending reviews:", error);
+      res.status(500).json({ message: "Failed to fetch pending reviews" });
+    }
+  });
+
+  app.post("/api/reviews/:walkthroughId/start", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const walkthroughId = req.params.walkthroughId;
+      
+      // Verify user is assigned reviewer
+      const walkthrough = await storage.getWalkthrough(walkthroughId);
+      if (!walkthrough) {
+        return res.status(404).json({ message: "Walkthrough not found" });
+      }
+      
+      if (walkthrough.assignedReviewer !== userId) {
+        return res.status(403).json({ message: "Not authorized to review this walkthrough" });
+      }
+      
+      const updatedWalkthrough = await storage.startReview(walkthroughId, userId);
+      res.json(updatedWalkthrough);
+    } catch (error) {
+      console.error("Error starting review:", error);
+      res.status(500).json({ message: "Failed to start review" });
+    }
+  });
+
+  app.post("/api/reviews/:walkthroughId/complete", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const walkthroughId = req.params.walkthroughId;
+      
+      const reviewDataSchema = z.object({
+        reviewerFeedback: z.string().optional(),
+        reviewerComments: z.string().optional(),
+      });
+      
+      const reviewData = reviewDataSchema.parse(req.body);
+      
+      // Verify user is assigned reviewer
+      const walkthrough = await storage.getWalkthrough(walkthroughId);
+      if (!walkthrough) {
+        return res.status(404).json({ message: "Walkthrough not found" });
+      }
+      
+      if (walkthrough.assignedReviewer !== userId) {
+        return res.status(403).json({ message: "Not authorized to review this walkthrough" });
+      }
+      
+      const updatedWalkthrough = await storage.completeReview(walkthroughId, reviewData);
+      
+      // Send completion notification to observer
+      try {
+        const reviewer = await storage.getUser(userId);
+        const teacher = await storage.getTeacher(updatedWalkthrough.teacherId);
+        const observer = await storage.getUser(updatedWalkthrough.createdBy);
+        
+        if (reviewer && teacher && observer) {
+          const reportUrl = `${req.protocol}://${req.get('host')}/walkthrough/${updatedWalkthrough.id}/report`;
+          
+          await emailService.sendReviewCompletionNotification({
+            walkthrough: updatedWalkthrough,
+            teacher,
+            reviewer,
+            observer,
+            reportUrl
+          });
+          
+          console.log(`Review completion notification sent to ${observer.email}`);
+        }
+      } catch (emailError) {
+        console.error("Error sending review completion email:", emailError);
+        // Don't fail the completion if email fails
+      }
+      
+      res.json(updatedWalkthrough);
+    } catch (error) {
+      console.error("Error completing review:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to complete review" });
+    }
+  });
+
   // AI feedback generation
   app.post("/api/walkthroughs/:id/generate-feedback", isAuthenticated, async (req, res) => {
     try {
@@ -138,6 +232,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
         status: req.query.status as string,
+        reviewStatus: req.query.reviewStatus as string,
+        assignedReviewer: req.query.assignedReviewer as string,
+        followUpNeeded: req.query.followUpNeeded === 'true' ? true : req.query.followUpNeeded === 'false' ? false : undefined,
       };
       
       // Remove undefined values
@@ -226,7 +323,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Handle review workflow changes
+      const wasAssignedReviewer = walkthrough.assignedReviewer;
+      const wasFollowUpNeeded = walkthrough.followUpNeeded;
+      const newAssignedReviewer = updateData.assignedReviewer;
+      const newFollowUpNeeded = updateData.followUpNeeded;
+
+      // Set review status when follow-up and reviewer are assigned
+      if (newFollowUpNeeded && newAssignedReviewer && (!wasFollowUpNeeded || !wasAssignedReviewer)) {
+        updateData.reviewStatus = "pending";
+        updateData.notificationSent = false;
+      }
+      // Clear review status if follow-up is turned off or reviewer is removed
+      else if (!newFollowUpNeeded || !newAssignedReviewer) {
+        updateData.reviewStatus = "not-required";
+        updateData.notificationSent = false;
+      }
+
       const updatedWalkthrough = await storage.updateWalkthrough(req.params.id, updateData);
+
+      // Send email notification if reviewer was just assigned
+      if (newFollowUpNeeded && newAssignedReviewer && 
+          (!wasFollowUpNeeded || wasAssignedReviewer !== newAssignedReviewer) && 
+          !updatedWalkthrough.notificationSent) {
+        
+        try {
+          const reviewer = await storage.getUser(newAssignedReviewer);
+          const teacher = await storage.getTeacher(updatedWalkthrough.teacherId);
+          const observer = await storage.getUser(updatedWalkthrough.createdBy);
+          
+          if (reviewer && teacher && observer) {
+            const reportUrl = `${req.protocol}://${req.get('host')}/walkthrough/${updatedWalkthrough.id}/report`;
+            
+            const emailSent = await emailService.sendReviewAssignmentNotification({
+              walkthrough: updatedWalkthrough,
+              teacher,
+              reviewer,
+              observer,
+              reportUrl
+            });
+            
+            if (emailSent) {
+              await storage.updateWalkthrough(req.params.id, { notificationSent: true });
+              console.log(`Review assignment notification sent to ${reviewer.email}`);
+            }
+          }
+        } catch (emailError) {
+          console.error("Error sending review assignment email:", emailError);
+          // Don't fail the update if email fails
+        }
+      }
       
       // Handle observer updates if provided
       if (req.body.observerIds && Array.isArray(req.body.observerIds)) {
