@@ -89,7 +89,13 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-gray-900">Classroom Walkthroughs</h2>
             <p className="text-gray-600 mt-1">Manage and review classroom observations</p>
           </div>
-          <div className="mt-4 sm:mt-0">
+          <div className="mt-4 sm:mt-0 flex gap-3">
+            <Link href="/coach/dashboard">
+              <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                <CheckSquare className="w-4 h-4 mr-2" />
+                Coach Dashboard
+              </Button>
+            </Link>
             <Link href="/walkthrough/new">
               <Button className="bg-primary-600 hover:bg-primary-700">
                 <Plus className="w-4 h-4 mr-2" />
