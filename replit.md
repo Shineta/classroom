@@ -6,6 +6,18 @@ This is a full-stack classroom observation and walkthrough documentation platfor
 
 The platform serves three main user roles: observers (who conduct walkthroughs), administrators (who manage the system), and coaches (who provide instructional feedback). It includes features for teacher management, walkthrough scheduling, real-time collaborative editing, file uploads, and detailed reporting.
 
+## Recent Changes (August 2025)
+
+- **Fixed Complete Walkthrough Functionality**: Resolved database foreign key constraint errors and navigation issues
+  - Fixed assigned reviewer validation to handle empty strings properly
+  - Added automatic navigation to dashboard after completion
+  - Implemented proper toast message handling for different operation types
+- **Enhanced File Upload Experience**: Improved upload feedback and auto-save behavior
+  - Separated file upload success messages from form update notifications  
+  - Added smart auto-save after file uploads without showing redundant success toasts
+- **Improved Real-time Collaboration**: Fixed WebSocket connection handling and error recovery
+- **Database Validation**: Added robust validation for user references and foreign key constraints
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
