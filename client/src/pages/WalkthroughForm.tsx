@@ -20,10 +20,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft, Save, Check, Clock, Users } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import StarRating from "@/components/StarRating";
-import type { Teacher, User, WalkthroughWithDetails } from "@shared/schema";
+import type { Teacher, Location, User, WalkthroughWithDetails } from "@shared/schema";
 
 const formSchema = z.object({
   teacherId: z.string().min(1, "Teacher is required"),
+  locationId: z.string().min(1, "Location is required"),
   dateTime: z.string().min(1, "Date and time is required"),
   subject: z.string().min(1, "Subject is required"),
   gradeLevel: z.string().optional(),
@@ -92,6 +93,11 @@ export default function WalkthroughForm() {
     enabled: isAuthenticated,
   });
 
+  const { data: locations } = useQuery<Location[]>({
+    queryKey: ["/api/locations"],
+    enabled: isAuthenticated,
+  });
+
   const { data: walkthrough, isLoading: walkthroughLoading } = useQuery<WalkthroughWithDetails>({
     queryKey: ["/api/walkthroughs", walkthroughId],
     enabled: isAuthenticated && isEditing && !!walkthroughId,
@@ -121,6 +127,7 @@ export default function WalkthroughForm() {
       
       form.reset({
         teacherId: walkthrough.teacherId,
+        locationId: walkthrough.locationId || "",
         dateTime: new Date(walkthrough.dateTime).toISOString().slice(0, 16),
         subject: walkthrough.subject,
         gradeLevel: walkthrough.gradeLevel || "",
@@ -462,6 +469,37 @@ export default function WalkthroughForm() {
                               {teachers?.map((teacher) => (
                                 <SelectItem key={teacher.id} value={teacher.id}>
                                   {teacher.firstName} {teacher.lastName} {teacher.gradeLevel && `(Grade ${teacher.gradeLevel})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="locationId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location *</FormLabel>
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              handleFieldChange("locationId", value);
+                            }}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a location..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {locations?.map((location) => (
+                                <SelectItem key={location.id} value={location.id}>
+                                  {location.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>

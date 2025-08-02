@@ -40,6 +40,15 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Locations table
+export const locations = pgTable("locations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Teachers table
 export const teachers = pgTable("teachers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -65,6 +74,7 @@ export const statusEnum = pgEnum("status", ["draft", "completed", "follow-up-nee
 export const walkthroughs = pgTable("walkthroughs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   teacherId: varchar("teacher_id").notNull().references(() => teachers.id),
+  locationId: varchar("location_id").references(() => locations.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   
   // Basic Information
@@ -134,6 +144,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   collaborationSessions: many(walkthroughSessions),
 }));
 
+export const locationsRelations = relations(locations, ({ many }) => ({
+  walkthroughs: many(walkthroughs),
+}));
+
 export const teachersRelations = relations(teachers, ({ many }) => ({
   walkthroughs: many(walkthroughs),
 }));
@@ -142,6 +156,10 @@ export const walkthroughsRelations = relations(walkthroughs, ({ one, many }) => 
   teacher: one(teachers, {
     fields: [walkthroughs.teacherId],
     references: [teachers.id],
+  }),
+  location: one(locations, {
+    fields: [walkthroughs.locationId],
+    references: [locations.id],
   }),
   creator: one(users, {
     fields: [walkthroughs.createdBy],
@@ -195,6 +213,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const insertLocationSchema = createInsertSchema(locations).pick({
+  name: true,
+});
+
 export const insertTeacherSchema = createInsertSchema(teachers).pick({
   firstName: true,
   lastName: true,
@@ -205,6 +227,7 @@ export const insertTeacherSchema = createInsertSchema(teachers).pick({
 
 export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
   teacherId: true,
+  locationId: true,
   dateTime: true,
   subject: true,
   gradeLevel: true,
@@ -243,6 +266,8 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginCredentials = z.infer<typeof loginSchema>;
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+export type Location = typeof locations.$inferSelect;
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type Teacher = typeof teachers.$inferSelect;
 export type InsertWalkthrough = z.infer<typeof insertWalkthroughSchema>;
@@ -253,6 +278,7 @@ export type WalkthroughSession = typeof walkthroughSessions.$inferSelect;
 // Extended types for API responses
 export type WalkthroughWithDetails = Walkthrough & {
   teacher: Teacher;
+  location: Location;
   creator: User;
   reviewer?: User;
   observers: (WalkthroughObserver & { observer: User })[];

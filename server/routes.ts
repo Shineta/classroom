@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
-import { insertTeacherSchema, insertWalkthroughSchema } from "@shared/schema";
+import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -46,6 +46,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error searching teachers:", error);
       res.status(500).json({ message: "Failed to search teachers" });
+    }
+  });
+
+  // Location routes
+  app.get("/api/locations", isAuthenticated, async (req, res) => {
+    try {
+      const locations = await storage.getLocations();
+      res.json(locations);
+    } catch (error) {
+      console.error("Error fetching locations:", error);
+      res.status(500).json({ message: "Failed to fetch locations" });
+    }
+  });
+
+  app.post("/api/locations", isAuthenticated, async (req, res) => {
+    try {
+      const locationData = insertLocationSchema.parse(req.body);
+      const location = await storage.createLocation(locationData);
+      res.status(201).json(location);
+    } catch (error) {
+      console.error("Error creating location:", error);
+      res.status(400).json({ message: "Failed to create location" });
     }
   });
 

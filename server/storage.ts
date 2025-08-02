@@ -1,6 +1,7 @@
 import {
   users,
   teachers,
+  locations,
   walkthroughs,
   walkthroughObservers,
   walkthroughSessions,
@@ -9,6 +10,8 @@ import {
   type UpsertUser,
   type Teacher,
   type InsertTeacher,
+  type Location,
+  type InsertLocation,
   type Walkthrough,
   type InsertWalkthrough,
   type WalkthroughObserver,
@@ -31,6 +34,11 @@ export interface IStorage {
   getTeacher(id: string): Promise<Teacher | undefined>;
   updateTeacher(id: string, teacher: Partial<InsertTeacher>): Promise<Teacher>;
   searchTeachers(query: string): Promise<Teacher[]>;
+  
+  // Location operations
+  createLocation(location: InsertLocation): Promise<Location>;
+  getLocations(): Promise<Location[]>;
+  getLocation(id: string): Promise<Location | undefined>;
   
   // Walkthrough operations
   createWalkthrough(walkthrough: InsertWalkthrough): Promise<Walkthrough>;
@@ -137,6 +145,25 @@ export class DatabaseStorage implements IStorage {
       .orderBy(teachers.lastName, teachers.firstName);
   }
 
+  // Location operations
+  async createLocation(locationData: InsertLocation): Promise<Location> {
+    const [location] = await db.insert(locations).values(locationData).returning();
+    return location;
+  }
+
+  async getLocations(): Promise<Location[]> {
+    return await db
+      .select()
+      .from(locations)
+      .where(eq(locations.active, true))
+      .orderBy(locations.name);
+  }
+
+  async getLocation(id: string): Promise<Location | undefined> {
+    const [location] = await db.select().from(locations).where(eq(locations.id, id));
+    return location;
+  }
+
   // Walkthrough operations
   async createWalkthrough(walkthroughData: InsertWalkthrough): Promise<Walkthrough> {
     const [walkthrough] = await db.insert(walkthroughs).values(walkthroughData).returning();
@@ -148,6 +175,7 @@ export class DatabaseStorage implements IStorage {
       where: eq(walkthroughs.id, id),
       with: {
         teacher: true,
+        location: true,
         creator: true,
         reviewer: true,
         observers: {
@@ -193,6 +221,7 @@ export class DatabaseStorage implements IStorage {
       where: conditions.length > 0 ? and(...conditions) : undefined,
       with: {
         teacher: true,
+        location: true,
         creator: true,
         reviewer: true,
         observers: {

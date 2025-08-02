@@ -4,12 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import type { Teacher } from "@shared/schema";
+import type { Teacher, Location } from "@shared/schema";
 
 interface FilterBarProps {
   filters: {
     search: string;
     teacherId: string;
+    locationId: string;
     subject: string;
     dateRange: string;
   };
@@ -24,6 +25,11 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
     enabled: isAuthenticated,
   });
 
+  const { data: locations } = useQuery<Location[]>({
+    queryKey: ["/api/locations"],
+    enabled: isAuthenticated,
+  });
+
   const handleFilterChange = (key: string, value: string) => {
     onFiltersChange({ ...filters, [key]: value === "all" ? "" : value });
   };
@@ -31,7 +37,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
   return (
     <Card className="mb-6">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
             <div className="relative">
@@ -60,6 +66,26 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
                 {teachers?.map((teacher) => (
                   <SelectItem key={teacher.id} value={teacher.id}>
                     {teacher.firstName} {teacher.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <Select
+              value={filters.locationId}
+              onValueChange={(value) => handleFilterChange("locationId", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Locations" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {locations?.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.name}
                   </SelectItem>
                 ))}
               </SelectContent>

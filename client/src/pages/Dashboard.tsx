@@ -15,11 +15,12 @@ export default function Dashboard() {
   const [filters, setFilters] = useState({
     search: "",
     teacherId: "",
+    locationId: "",
     subject: "",
     dateRange: "this-week",
   });
 
-  const { data: walkthroughs, isLoading: walkthroughsLoading } = useQuery({
+  const { data: walkthroughs, isLoading: walkthroughsLoading } = useQuery<WalkthroughWithDetails[]>({
     queryKey: ["/api/walkthroughs"],
     enabled: isAuthenticated,
   });
