@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Dashboard";
 import WalkthroughForm from "@/pages/WalkthroughForm";
+import WalkthroughReport from "@/pages/WalkthroughReport";
 import WalkthroughEdit from "@/pages/WalkthroughEdit";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
@@ -34,6 +35,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/walkthrough/new" component={WalkthroughForm} />
           <Route path="/walkthrough/:id/edit" component={WalkthroughEdit} />
+          <Route path="/walkthrough/:id/report" component={WalkthroughReport} />
           <Route path="/walkthrough/:id" component={WalkthroughForm} />
         </>
       )}
