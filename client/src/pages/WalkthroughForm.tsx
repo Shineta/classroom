@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Save, Check, Clock, Users } from "lucide-react";
+import { ArrowLeft, Save, Check, Clock, Users, Sparkles } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import StarRating from "@/components/StarRating";
 import type { Teacher, Location, User, WalkthroughWithDetails } from "@shared/schema";
@@ -106,6 +106,40 @@ export default function WalkthroughForm() {
   const { data: userSearchResults } = useQuery<User[]>({
     queryKey: ["/api/users/search", { q: searchQuery }],
     enabled: isAuthenticated && searchQuery.length > 2,
+  });
+
+  // AI feedback generation mutation
+  const generateFeedbackMutation = useMutation({
+    mutationFn: async () => {
+      if (!walkthroughId || walkthroughId === "new") {
+        throw new Error("Please save the walkthrough as a draft first to generate AI feedback");
+      }
+      const response = await apiRequest("POST", `/api/walkthroughs/${walkthroughId}/generate-feedback`);
+      return await response.json();
+    },
+    onSuccess: (feedback) => {
+      // Update form fields with AI-generated content
+      form.setValue("strengths", feedback.strengths);
+      form.setValue("areasForGrowth", feedback.areasForGrowth);
+      form.setValue("additionalComments", feedback.additionalComments);
+      
+      // Trigger auto-save for each field
+      handleFieldChange("strengths", feedback.strengths);
+      handleFieldChange("areasForGrowth", feedback.areasForGrowth);
+      handleFieldChange("additionalComments", feedback.additionalComments);
+      
+      toast({
+        title: "AI Feedback Generated",
+        description: "Review and edit the AI-generated suggestions as needed.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Generate AI Feedback",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Form setup
@@ -952,6 +986,30 @@ export default function WalkthroughForm() {
                 {/* Feedback & Follow-up Tab */}
                 {currentTab === "feedback" && (
                   <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">AI-Powered Feedback Assistant</h4>
+                          <p className="text-sm text-gray-600">Generate intelligent feedback based on your walkthrough observations</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => generateFeedbackMutation.mutate()}
+                          disabled={generateFeedbackMutation.isPending || !isEditing || walkthroughId === "new"}
+                          className="bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          {generateFeedbackMutation.isPending ? "Generating AI Feedback..." : "Generate AI Feedback"}
+                        </Button>
+                      </div>
+                      {walkthroughId === "new" && (
+                        <p className="text-sm text-orange-600 mt-2">
+                          💡 Save as draft first to enable AI feedback generation
+                        </p>
+                      )}
+                    </div>
+
                     <FormField
                       control={form.control}
                       name="strengths"

@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
+import { aiService } from "./aiService";
 import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -83,6 +84,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error searching users:", error);
       res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
+  // AI feedback generation
+  app.post("/api/walkthroughs/:id/generate-feedback", isAuthenticated, async (req, res) => {
+    try {
+      const walkthroughId = req.params.id;
+      const walkthrough = await storage.getWalkthrough(walkthroughId);
+      
+      if (!walkthrough) {
+        return res.status(404).json({ message: "Walkthrough not found" });
+      }
+
+      // Prepare data for AI analysis
+      const analysisData = {
+        subject: walkthrough.subject,
+        gradeLevel: walkthrough.gradeLevel || undefined,
+        teacherName: `${walkthrough.teacher.firstName} ${walkthrough.teacher.lastName}`,
+        lessonObjective: walkthrough.lessonObjective || undefined,
+        evidenceOfLearning: walkthrough.evidenceOfLearning || undefined,
+        behaviorRoutines: walkthrough.behaviorRoutines as any,
+        climate: walkthrough.climate || undefined,
+        climateNotes: walkthrough.climateNotes || undefined,
+        engagementLevel: walkthrough.engagementLevel || undefined,
+        transitions: walkthrough.transitions || undefined,
+        transitionComments: walkthrough.transitionComments || undefined,
+        effectivenessRatings: walkthrough.effectivenessRatings as any,
+      };
+
+      const feedback = await aiService.generateWalkthroughFeedback(analysisData);
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error generating AI feedback:", error);
+      res.status(500).json({ message: "Failed to generate AI feedback" });
     }
   });
 
