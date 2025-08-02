@@ -70,11 +70,32 @@ export default function WalkthroughReport() {
   };
 
   const getRatingDisplay = (rating: string | undefined) => {
-    if (!rating) return "Not Rated";
-    const numRating = parseInt(rating);
+    if (!rating || rating === "") return "Not Rated";
+    
+    // Handle text ratings like "good", "needs-improvement", "poor"
+    const textToNumber: { [key: string]: number } = {
+      "excellent": 5,
+      "good": 4,
+      "satisfactory": 3,
+      "needs-improvement": 2,
+      "poor": 1
+    };
+    
+    let numRating = parseInt(rating);
+    let displayText = rating;
+    
+    // If it's a text rating, convert it
+    if (isNaN(numRating) && textToNumber[rating.toLowerCase()]) {
+      numRating = textToNumber[rating.toLowerCase()];
+      displayText = rating.charAt(0).toUpperCase() + rating.slice(1).replace('-', ' ');
+    } else if (isNaN(numRating)) {
+      displayText = rating.replace('-', ' ');
+      numRating = 0;
+    }
+    
     return (
       <div className="flex items-center">
-        <span className="mr-2">{rating}/5</span>
+        <span className="mr-2 text-sm">{displayText}</span>
         <div className="flex">
           {[1, 2, 3, 4, 5].map((star) => (
             <Star
