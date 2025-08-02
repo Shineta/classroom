@@ -118,15 +118,22 @@ export default function WalkthroughForm() {
       return await response.json();
     },
     onSuccess: (feedback) => {
+      console.log("AI Feedback received:", feedback);
+      
+      // Ensure we have string values
+      const strengths = typeof feedback.strengths === 'string' ? feedback.strengths : String(feedback.strengths || '');
+      const areasForGrowth = typeof feedback.areasForGrowth === 'string' ? feedback.areasForGrowth : String(feedback.areasForGrowth || '');
+      const additionalComments = typeof feedback.additionalComments === 'string' ? feedback.additionalComments : String(feedback.additionalComments || '');
+      
       // Update form fields with AI-generated content
-      form.setValue("strengths", feedback.strengths);
-      form.setValue("areasForGrowth", feedback.areasForGrowth);
-      form.setValue("additionalComments", feedback.additionalComments);
+      form.setValue("strengths", strengths);
+      form.setValue("areasForGrowth", areasForGrowth);
+      form.setValue("additionalComments", additionalComments);
       
       // Trigger auto-save for each field
-      handleFieldChange("strengths", feedback.strengths);
-      handleFieldChange("areasForGrowth", feedback.areasForGrowth);
-      handleFieldChange("additionalComments", feedback.additionalComments);
+      handleFieldChange("strengths", strengths);
+      handleFieldChange("areasForGrowth", areasForGrowth);
+      handleFieldChange("additionalComments", additionalComments);
       
       toast({
         title: "AI Feedback Generated",

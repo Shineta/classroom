@@ -114,6 +114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const feedback = await aiService.generateWalkthroughFeedback(analysisData);
+      
+      // Debug logging
+      console.log("AI Feedback generated:", {
+        strengths: typeof feedback.strengths,
+        areasForGrowth: typeof feedback.areasForGrowth,
+        additionalComments: typeof feedback.additionalComments
+      });
+      
       res.json(feedback);
     } catch (error) {
       console.error("Error generating AI feedback:", error);
@@ -371,11 +379,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'join-walkthrough') {
           const { walkthroughId, userId } = data;
           
-          // Update session in database
-          await storage.updateSession(walkthroughId, userId);
+          // Only update session for existing walkthroughs
+          if (walkthroughId && walkthroughId !== "new") {
+            try {
+              await storage.updateSession(walkthroughId, userId);
+            } catch (error) {
+              console.error("Session update error:", error);
+            }
+          }
           
-          // Broadcast to all clients in this walkthrough
-          const sessions = await storage.getActiveSessions(walkthroughId);
+          // Broadcast to all clients in this walkthrough (only for existing walkthroughs)
+          const sessions = walkthroughId && walkthroughId !== "new" 
+            ? await storage.getActiveSessions(walkthroughId) 
+            : [];
           
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
@@ -391,8 +407,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'walkthrough-update') {
           const { walkthroughId, fieldName, fieldValue, userId } = data;
           
-          // Update session activity
-          await storage.updateSession(walkthroughId, userId);
+          // Only update session for existing walkthroughs
+          if (walkthroughId && walkthroughId !== "new") {
+            try {
+              await storage.updateSession(walkthroughId, userId);
+            } catch (error) {
+              console.error("Session update error:", error);
+            }
+          }
           
           // Broadcast field update to other clients
           wss.clients.forEach((client) => {
@@ -410,9 +432,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (data.type === 'leave-walkthrough') {
           const { walkthroughId, userId } = data;
-          await storage.deactivateSession(walkthroughId, userId);
+          if (walkthroughId && walkthroughId !== "new") {
+            try {
+              await storage.deactivateSession(walkthroughId, userId);
+            } catch (error) {
+              console.error("Session deactivation error:", error);
+            }
+          }
           
-          const sessions = await storage.getActiveSessions(walkthroughId);
+          const sessions = walkthroughId && walkthroughId !== "new" 
+            ? await storage.getActiveSessions(walkthroughId) 
+            : [];
           
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {

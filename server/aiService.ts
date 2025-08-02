@@ -55,10 +55,18 @@ export class AIService {
 
       const result = JSON.parse(response.choices[0].message.content || "{}");
       
+      // Ensure all fields are strings, not arrays
+      const ensureString = (value: any): string => {
+        if (Array.isArray(value)) {
+          return value.join('\n\n');
+        }
+        return typeof value === 'string' ? value : String(value || '');
+      };
+      
       return {
-        strengths: result.strengths || "Unable to generate strengths analysis.",
-        areasForGrowth: result.areasForGrowth || "Unable to generate growth recommendations.",
-        additionalComments: result.additionalComments || "Unable to generate additional insights."
+        strengths: ensureString(result.strengths) || "Unable to generate strengths analysis.",
+        areasForGrowth: ensureString(result.areasForGrowth) || "Unable to generate growth recommendations.",
+        additionalComments: ensureString(result.additionalComments) || "Unable to generate additional insights."
       };
     } catch (error) {
       console.error("Error generating AI feedback:", error);
@@ -119,13 +127,15 @@ export class AIService {
     prompt += `
 
 **Instructions:**
-1. **Strengths**: Highlight 2-3 specific positive teaching practices observed, referencing the actual data points. Be concrete and celebratory.
+1. **Strengths**: Highlight 2-3 specific positive teaching practices observed, referencing the actual data points. Be concrete and celebratory. Return as a single string with multiple paragraphs if needed.
 
-2. **Areas for Growth**: Provide 2-3 constructive suggestions for improvement based on the ratings and observations. Include specific, actionable strategies the teacher can implement.
+2. **Areas for Growth**: Provide 2-3 constructive suggestions for improvement based on the ratings and observations. Include specific, actionable strategies the teacher can implement. Return as a single string with multiple paragraphs if needed.
 
-3. **Additional Comments**: Synthesize overall observations, note patterns, and provide any additional context or recommendations for professional development.
+3. **Additional Comments**: Synthesize overall observations, note patterns, and provide any additional context or recommendations for professional development. Return as a single string.
 
 Keep feedback professional, supportive, and evidence-based. Avoid generic statements and focus on specific observations from the data provided.
+
+IMPORTANT: Each field (strengths, areasForGrowth, additionalComments) must be a single string value, not an array. Use line breaks or paragraphs within the string if you need to separate multiple points.
 
 Respond in JSON format only.`;
 
