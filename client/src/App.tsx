@@ -9,6 +9,8 @@ import Dashboard from "@/pages/Dashboard";
 import WalkthroughForm from "@/pages/WalkthroughForm";
 import WalkthroughReport from "@/pages/WalkthroughReport";
 import WalkthroughEdit from "@/pages/WalkthroughEdit";
+import CoachDashboard from "@/pages/CoachDashboard";
+import CoachInsights from "@/pages/CoachInsights";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -37,6 +39,8 @@ function Router() {
           <Route path="/walkthrough/:id/edit" component={WalkthroughEdit} />
           <Route path="/walkthrough/:id/report" component={WalkthroughReport} />
           <Route path="/walkthrough/:id" component={WalkthroughForm} />
+          <Route path="/coach/dashboard" component={CoachDashboard} />
+          <Route path="/coach/insights" component={CoachInsights} />
         </>
       )}
       <Route component={NotFound} />

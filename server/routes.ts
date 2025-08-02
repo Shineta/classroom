@@ -100,6 +100,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/reviews/in-progress", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const walkthroughs = await storage.getWalkthroughs({
+        assignedReviewer: userId,
+        reviewStatus: "in-progress"
+      });
+      res.json(walkthroughs);
+    } catch (error) {
+      console.error("Error fetching in-progress reviews:", error);
+      res.status(500).json({ message: "Failed to fetch in-progress reviews" });
+    }
+  });
+
+  app.get("/api/reviews/completed", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const walkthroughs = await storage.getWalkthroughs({
+        assignedReviewer: userId,
+        reviewStatus: "completed"
+      });
+      res.json(walkthroughs);
+    } catch (error) {
+      console.error("Error fetching completed reviews:", error);
+      res.status(500).json({ message: "Failed to fetch completed reviews" });
+    }
+  });
+
+  app.post("/api/reviews/:id/start", isAuthenticated, async (req: any, res) => {
+    try {
+      const walkthroughId = req.params.id;
+      const userId = req.user.id;
+      
+      // Verify user is assigned to review this walkthrough
+      const walkthrough = await storage.getWalkthrough(walkthroughId);
+      if (!walkthrough || walkthrough.assignedReviewer !== userId) {
+        return res.status(403).json({ message: "Not authorized to review this walkthrough" });
+      }
+      
+      await storage.startReview(walkthroughId);
+      res.status(200).json({ message: "Review started successfully" });
+    } catch (error) {
+      console.error("Error starting review:", error);
+      res.status(500).json({ message: "Failed to start review" });
+    }
+  });
+
   app.post("/api/reviews/:walkthroughId/start", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -448,6 +495,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch statistics" });
+    }
+  });
+
+  // Analytics routes for Coach Insights
+  app.get("/api/analytics/observer-activity", isAuthenticated, async (req, res) => {
+    try {
+      const observerActivity = await storage.getObserverActivity();
+      res.json(observerActivity);
+    } catch (error) {
+      console.error("Error fetching observer activity:", error);
+      res.status(500).json({ message: "Failed to fetch observer activity" });
+    }
+  });
+
+  app.get("/api/analytics/engagement-trends", isAuthenticated, async (req, res) => {
+    try {
+      const trends = await storage.getEngagementTrends();
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching engagement trends:", error);
+      res.status(500).json({ message: "Failed to fetch engagement trends" });
+    }
+  });
+
+  app.get("/api/analytics/subject-distribution", isAuthenticated, async (req, res) => {
+    try {
+      const subjectData = await storage.getSubjectDistribution();
+      res.json(subjectData);
+    } catch (error) {
+      console.error("Error fetching subject distribution:", error);
+      res.status(500).json({ message: "Failed to fetch subject distribution" });
+    }
+  });
+
+  app.get("/api/analytics/strengths-growth", isAuthenticated, async (req, res) => {
+    try {
+      const strengthsGrowthData = await storage.getStrengthsGrowthData();
+      res.json(strengthsGrowthData);
+    } catch (error) {
+      console.error("Error fetching strengths and growth data:", error);
+      res.status(500).json({ message: "Failed to fetch strengths and growth data" });
+    }
+  });
+
+  app.get("/api/analytics/overview", isAuthenticated, async (req, res) => {
+    try {
+      const overview = await storage.getAnalyticsOverview();
+      res.json(overview);
+    } catch (error) {
+      console.error("Error fetching analytics overview:", error);
+      res.status(500).json({ message: "Failed to fetch analytics overview" });
     }
   });
 

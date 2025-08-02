@@ -1,0 +1,46 @@
+Instructional Coach (Reviewer/Supervisor)
+Role & Current Capabilities: Instructional coaches act as supervisors who review observers’ walkthrough reports and coach the observers/teachers. In the current system, a user with role coach sees a Review Dashboard tab alongside the walkthrough list
+GitHub
+. This review dashboard shows any observations assigned to them for follow-up. It’s organized into sub-tabs for Pending, In-Progress, and Completed reviews
+GitHub
+. When an observer flags a walkthrough for follow-up and assigns a coach, that report appears under the coach’s Pending list. The coach can click “Start Review” (moving it to In-Progress) and then “Complete Review” when done
+GitHub
+. Completing a review allows the coach to input formal feedback and additional comments, which get saved to the walkthrough record and notify the observer by email
+GitHub
+. Coaches can also view the full walkthrough report and see the observer’s original notes to guide their feedback
+GitHub
+. (Coaches also have the same base capabilities as observers – they can technically create or view observations – but their primary interface is the review workflow.) Pages/Dashboards for Coaches:
+Pending Reviews List: Shows all walkthroughs awaiting the coach’s review (follow-ups assigned to them). Each entry displays key info: teacher name, subject/grade, the observing teacher, date, and priority level
+GitHub
+GitHub
+. High-priority follow-ups are labeled (e.g. a red “HIGH PRIORITY” badge if marked so by the observer
+GitHub
+). The coach can click a Start Review button on each pending item to claim it
+GitHub
+, which time-stamps the start and moves it to “In Progress”.
+In-Progress Reviews: Once a review is started, it appears in this section. The coach can open it to continue working. The UI provides a form (modal dialog) to enter Reviewer Feedback and Additional Comments for that observation
+GitHub
+GitHub
+. These fields let the coach write coaching feedback for the observer/teacher (e.g. praise, suggestions, next steps). When ready, the coach hits Complete Review, which finalizes the review. The system then updates the walkthrough’s status to completed and sends an email notification to the original observer with the coach’s feedback and a link to the report
+GitHub
+.
+Completed Reviews Archive: Coaches can also view a history of reviews they’ve finished
+GitHub
+. Each completed item shows the observation details and the feedback that was given. This helps coaches keep track of what guidance they’ve provided and ensure follow-up actions were addressed. (Currently, completed reviews are listed with the feedback text visible in the card
+GitHub
+ – “Your Review Feedback” – for reference.) They can still click “View Report” to see the full walkthrough + feedback in context
+GitHub
+.
+Improvement Suggestions for Coaches:
+Associate Coaches with Observers/Schools: In a growing system, a coach might supervise a specific group of observers or a particular school. We should consider linking user accounts (e.g. an “observer” user could have a field for their coach/supervisor, or coaches tied to locations). This would allow the coach’s dashboard to not only show assigned follow-ups, but potentially all observations by their team for oversight. For example, a coach could have a filter or secondary tab to browse walkthroughs done by observers they manage, even if a formal follow-up isn’t flagged. Currently, coaches could search by an observer’s name in the list
+GitHub
+, but an explicit view would be more convenient. This may involve extending the data model (e.g. adding a supervisor relation or using the existing Location to group observers).
+Review Feedback Workflow Enhancements: The review modal should ensure coaches provide meaningful input. We can improve UX by showing the original observer’s notes side-by-side with the feedback fields (so coaches can easily reference what the observer saw). Another idea is to include quick templates or a checklist for coaches, possibly even an AI suggestion to summarize key points, to help new coaches. Ensuring the Follow-up Date (if one was set by the observer) is visible to the coach during review is also important, so they know the timeline expected.
+Notifications and Reminders: The system already emails the assigned coach when an observation is marked for follow-up (and emails the observer when the review is completed)
+GitHub
+GitHub
+. We can enhance this by sending reminder emails or dashboard alerts for pending reviews approaching their follow-up date. For example, if a follow-up meeting was scheduled next week, the coach could get a reminder if the review isn’t completed within a few days. This ensures nothing falls through the cracks.
+Analytics for Coaches: Provide coaches with metrics similar to leadership, but scoped to their observers. A coach’s dashboard could show how many observations each of their observers has done, average scores in their school or subject area, or common trends in areas for growth. This helps coaches target support. While the current StatsCards are per-user
+GitHub
+GitHub
+, a coach might benefit from a “Coach Overview” showing aggregated data for their cohort (e.g. “Total observations in your schools this month”, “Top 3 common improvement areas across teachers”). This could be an expansion once more data is collected.
