@@ -47,6 +47,35 @@ export function ReviewFeedbackModal({
   const [reviewerComments, setReviewerComments] = useState(walkthrough.reviewerComments || "");
   const [isDraft, setIsDraft] = useState(true);
 
+  // Coaching feedback templates
+  const feedbackTemplates = {
+    strengths: [
+      "Excellent classroom management and student engagement",
+      "Strong implementation of differentiated instruction",
+      "Effective use of questioning strategies to promote critical thinking",
+      "Well-organized lesson structure with clear learning objectives",
+      "Great rapport with students and positive classroom environment"
+    ],
+    growthAreas: [
+      "Consider incorporating more student-centered activities",
+      "Provide more wait time for student responses",
+      "Utilize formative assessment strategies throughout the lesson",
+      "Integrate more technology tools to enhance learning",
+      "Increase opportunities for student collaboration"
+    ],
+    nextSteps: [
+      "Schedule a follow-up observation in 2-3 weeks",
+      "Provide resources on [specific topic]",
+      "Collaborate with grade-level team on best practices",
+      "Attend professional development session on [topic]",
+      "Implement suggested strategies and document progress"
+    ]
+  };
+
+  const insertTemplate = (category: keyof typeof feedbackTemplates, text: string) => {
+    setReviewerFeedback(prev => prev + (prev ? '\n\n' : '') + text);
+  };
+
   const saveDraftMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/walkthroughs/${walkthrough.id}`, {
@@ -320,6 +349,36 @@ export function ReviewFeedbackModal({
                   <p className="text-sm text-gray-600 mb-3">
                     Provide comprehensive feedback on the observation, including instructional insights and recommendations.
                   </p>
+                  
+                  {/* Quick Templates */}
+                  <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs font-medium text-gray-700 mb-2">Quick Templates:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {feedbackTemplates.strengths.slice(0, 2).map((template, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-6"
+                          onClick={() => insertTemplate('strengths', template)}
+                        >
+                          {template.substring(0, 25)}...
+                        </Button>
+                      ))}
+                      {feedbackTemplates.growthAreas.slice(0, 2).map((template, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-6"
+                          onClick={() => insertTemplate('growthAreas', template)}
+                        >
+                          {template.substring(0, 25)}...
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
                   <Textarea
                     id="reviewerFeedback"
                     value={reviewerFeedback}

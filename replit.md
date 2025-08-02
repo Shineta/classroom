@@ -8,12 +8,16 @@ The platform serves three main user roles: observers (who conduct walkthroughs),
 
 ## Recent Changes (August 2025)
 
-- **Completed Coach-Specific Features**: Implemented comprehensive instructional coach capabilities
+- **Completed Coach-Specific Features**: Implemented comprehensive instructional coach capabilities per requirements document
   - Created CoachDashboard with tabbed interface for pending, in-progress, and completed reviews
   - Built ReviewFeedbackModal with side-by-side layout for observation review and structured feedback
   - Developed CoachInsights page with analytics dashboards, observer activity metrics, and engagement trends
   - Added coach-specific API endpoints for analytics data including observer activity, engagement trends, subject distribution, and overview statistics
   - Integrated real-time chart visualizations using Recharts for data analysis
+  - Enhanced review cards with priority badges, follow-up dates, location info, and review timestamps
+  - Added "View Report" buttons for all review states and coaching feedback templates
+  - Implemented proper coaching workflow with "Start Review" → "Complete Review" progression
+  - Added navigation between Coach Dashboard and Analytics with proper header layout
 - **Completed Review Workflow System**: Implemented comprehensive review workflow with email notifications
   - Added review status tracking (pending, in-progress, completed) with database schema updates
   - Enhanced main Dashboard with "My Walkthroughs" and "Review Dashboard" tabs

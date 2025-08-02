@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, User, BookOpen, AlertCircle, Clock, CheckCircle } from "lucide-react";
+import { CalendarDays, User, BookOpen, AlertCircle, Clock, CheckCircle, BarChart3, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { WalkthroughWithDetails } from "@shared/schema";
@@ -92,6 +92,7 @@ export default function CoachDashboard() {
               </span>
               {walkthrough.priority && (
                 <Badge variant="outline" className={getPriorityColor(walkthrough.priority)}>
+                  {walkthrough.priority === 'high' && '🔴 '}
                   {walkthrough.priority.charAt(0).toUpperCase() + walkthrough.priority.slice(1)} Priority
                 </Badge>
               )}
@@ -109,44 +110,90 @@ export default function CoachDashboard() {
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-3 w-3" />
                 <span>{formatDate(walkthrough.dateTime)}</span>
+                {walkthrough.followUpDate && (
+                  <span className="text-orange-600 font-medium">
+                    • Follow-up: {formatDate(walkthrough.followUpDate)}
+                  </span>
+                )}
               </div>
               
               <div className="flex items-center gap-2">
                 <User className="h-3 w-3" />
                 <span>Observer: {walkthrough.creator.firstName} {walkthrough.creator.lastName}</span>
               </div>
-            </div>
-          </div>
 
-          {showActions && (
-            <div className="ml-4">
-              {actionType === 'start' ? (
-                <Button
-                  onClick={() => handleStartReview(walkthrough.id)}
-                  disabled={startReviewMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Clock className="h-4 w-4" />
-                  {startReviewMutation.isPending ? 'Starting...' : 'Start Review'}
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => handleCompleteReview(walkthrough)}
-                  variant="default"
-                  className="flex items-center gap-2"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Complete Review
-                </Button>
+              {walkthrough.location && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">📍 {walkthrough.location.name}</span>
+                </div>
               )}
             </div>
-          )}
+
+            {/* Show review feedback for completed reviews */}
+            {actionType === 'complete' && walkthrough.reviewStatus === 'completed' && walkthrough.reviewerFeedback && (
+              <div className="mt-3 p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                <div className="text-sm font-medium text-green-900 mb-1">Your Review Feedback:</div>
+                <p className="text-sm text-green-800 line-clamp-3">{walkthrough.reviewerFeedback}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="ml-4 flex flex-col gap-2">
+            {/* View Report button for all review states */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/walkthrough/${walkthrough.id}/report`, '_blank')}
+              className="flex items-center gap-2"
+            >
+              <BookOpen className="h-3 w-3" />
+              View Report
+            </Button>
+
+            {showActions && (
+              <>
+                {actionType === 'start' ? (
+                  <Button
+                    onClick={() => handleStartReview(walkthrough.id)}
+                    disabled={startReviewMutation.isPending}
+                    className="flex items-center gap-2"
+                  >
+                    <Clock className="h-4 w-4" />
+                    {startReviewMutation.isPending ? 'Starting...' : 'Start Review'}
+                  </Button>
+                ) : actionType === 'complete' && walkthrough.reviewStatus === 'in-progress' ? (
+                  <Button
+                    onClick={() => handleCompleteReview(walkthrough)}
+                    variant="default"
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Complete Review
+                  </Button>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
 
-        {walkthrough.lessonFocus && (
+        {walkthrough.lessonObjective && (
           <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-            <span className="text-sm font-medium text-blue-900">Lesson Focus:</span>
-            <p className="text-sm text-blue-800 mt-1">{walkthrough.lessonFocus}</p>
+            <span className="text-sm font-medium text-blue-900">Lesson Objective:</span>
+            <p className="text-sm text-blue-800 mt-1">{walkthrough.lessonObjective}</p>
+          </div>
+        )}
+
+        {/* Show timestamps for review workflow */}
+        {(walkthrough.reviewStartedAt || walkthrough.reviewCompletedAt) && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="flex gap-4 text-xs text-gray-500">
+              {walkthrough.reviewStartedAt && (
+                <span>Started: {new Date(walkthrough.reviewStartedAt).toLocaleDateString()}</span>
+              )}
+              {walkthrough.reviewCompletedAt && (
+                <span>Completed: {new Date(walkthrough.reviewCompletedAt).toLocaleDateString()}</span>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
@@ -188,13 +235,37 @@ export default function CoachDashboard() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Coach Review Dashboard</h1>
-        <p className="text-gray-600">
-          Manage classroom walkthrough reviews and provide instructional feedback.
-        </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Instructional Coach Dashboard</h1>
+              <p className="text-gray-600">Manage walkthrough reviews, provide feedback, and track team performance</p>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => window.location.href = '/coach/insights'} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Coach Analytics
+              </Button>
+              <Button 
+                onClick={() => window.history.back()} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
       <Tabs defaultValue="pending" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
@@ -287,6 +358,7 @@ export default function CoachDashboard() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }
