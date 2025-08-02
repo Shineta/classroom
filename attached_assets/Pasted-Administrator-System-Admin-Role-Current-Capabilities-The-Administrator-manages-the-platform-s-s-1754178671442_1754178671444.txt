@@ -1,0 +1,29 @@
+Administrator (System Admin)
+Role & Current Capabilities: The Administrator manages the platform’s settings and users. Currently, admin is one of the three defined roles
+GitHub
+, but the app does not yet have a dedicated admin UI beyond what an admin user can do via the same dashboards. Account creation is currently open – any new registrant can self-select a role including admin
+GitHub
+. This is likely for testing purposes; in a real deployment, we’d expect admins to control role assignments. Admins would also handle setup tasks like entering the list of teachers and locations that observers can select. The backend has API routes for adding teachers and locations
+GitHub
+GitHub
+, and for searching users
+GitHub
+, implying the intention of an admin interface for these data. Pages/Functions for Admins:
+User Management: An admin dashboard should list all user accounts with their role, and allow the admin to create, edit, or deactivate users. For example, when a new staff member is hired as an observer, an admin can add an account for them (or approve their registration and assign the correct role). Similarly, if someone should no longer have coach or admin privileges, the admin can update their role. This could be a simple UI with a table of users and an edit form. At minimum, remove the ability for general users to assign themselves high-level roles – for instance, only an admin can promote someone to admin or coach. The registration page should default new accounts to a low-privilege role and perhaps hide the role selector in production
+GitHub
+, relying on admin to elevate roles as needed.
+Teacher & Class Data Management: Admins need to maintain the list of Teachers and Locations in the system. Observers depend on these lists to tag which teacher was observed and where. A page for Manage Teachers would let the admin add new teacher records (name, email, grade, subject, etc.), edit existing ones, or mark them inactive if they leave
+GitHub
+. Likewise, a Manage Locations page would list school or classroom locations and allow edits
+GitHub
+. This ensures the data in the observation form dropdowns is accurate. It’s likely easiest to implement these as simple forms or even CSV import if many entries. (Down the line, integration with an SIS could auto-sync teachers and classes, but initially manual management by admin is fine.)
+System Settings & Integrations: If the application integrates with external services like Google Classroom, the admin should configure and monitor this. For example, an admin page might allow connecting a Google API key or OAuth for the organization, and selecting which Google Classroom data to sync (rosters, class names, etc.). The admin would also oversee other settings such as email templates for notifications (the app sends emails for review assignments and completions
+GitHub
+GitHub
+ – an admin might want to customize these templates or the “from” address). Security settings (like resetting the session secret or requiring password complexity) also fall under admin purview, though those might be handled outside the UI in config.
+Improvement Suggestions for Admins:
+Harden Authentication & Authorization: As mentioned, currently any user can register as an admin or coach
+GitHub
+, which is unsafe. We recommend implementing an invite or approval system for elevated roles. For example, new sign-ups could default to observer role and require an existing admin to promote them if needed. Alternatively, disable open registration entirely in production and have admins manually add users. In addition, add role-based middleware on server routes that truly restricts access (e.g., only admin can call the user search or create teacher endpoints). This could be done by extending the isAuthenticated check with a role check, or by writing small utilities like requireRole('admin') for certain APIs. This ensures that, for instance, only an admin user can create new locations or view all users.
+Audit and Logs: For transparency, an admin interface could include logs of recent actions (e.g., user X created a walkthrough, user Y updated a review). This is more of a nice-to-have, but in an educational setting, auditing who edited an observation or who accessed data can be important. Starting with logging in the backend (which is partially there via console logs) and later exposing some of it in the UI for admins would be valuable.
+Role Expansion & Delegation: If the organization is large, we might consider sub-admin roles, like a School Admin who can only manage users at one school. This might be beyond current needs, but structuring the data model with a possibility of associating users with locations could make this possible. For now, one central admin role is fine; but we mention it so the design is forward-compatible (e.g., if leadership role is added, deciding whether they have any admin-like powers or strictly view-only).

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { ClipboardCheck, Plus, LogOut, FileText, CheckSquare, Users } from "lucide-react";
+import { ClipboardCheck, Plus, LogOut, FileText, CheckSquare, Users, Settings } from "lucide-react";
 import { Link } from "wouter";
 import StatsCards from "@/components/StatsCards";
 import FilterBar from "@/components/FilterBar";
@@ -103,6 +103,14 @@ export default function Dashboard() {
                 <Button variant="outline" className="border-purple-600 text-purple-600 hover:bg-purple-50">
                   <Users className="w-4 h-4 mr-2" />
                   Leadership Dashboard
+                </Button>
+              </Link>
+            )}
+            {user?.role === 'admin' && (
+              <Link href="/admin/dashboard">
+                <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Admin Dashboard
                 </Button>
               </Link>
             )}

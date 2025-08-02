@@ -990,6 +990,21 @@ export class DatabaseStorage implements IStorage {
       avgEngagement: row.avgEngagement || 0,
     }));
   }
+
+  // Admin Methods
+  async getAllUsers(): Promise<any[]> {
+    const result = await db.select().from(users).orderBy(users.createdAt);
+    return result;
+  }
+
+  async updateUser(id: string, userData: Partial<typeof users.$inferInsert>): Promise<any> {
+    const [user] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
 }
 
 export const storage = new DatabaseStorage();
