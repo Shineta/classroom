@@ -103,6 +103,10 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
+                <SelectItem value="Computer Science Essentials">Computer Science Essentials</SelectItem>
+                <SelectItem value="Computer Science A">Computer Science A</SelectItem>
+                <SelectItem value="Web Dev (Intro)">Web Dev (Intro)</SelectItem>
+                <SelectItem value="Robotics">Robotics</SelectItem>
                 <SelectItem value="Mathematics">Mathematics</SelectItem>
                 <SelectItem value="English Language Arts">English Language Arts</SelectItem>
                 <SelectItem value="Science">Science</SelectItem>
