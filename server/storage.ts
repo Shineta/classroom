@@ -672,6 +672,324 @@ export class DatabaseStorage implements IStorage {
       avgEngagement: avgResult.avg || 0,
     };
   }
+
+  // Leadership Analytics Methods
+  async getLeadershipOverview(locationFilter?: string, dateRange?: string): Promise<any> {
+    let dateCondition;
+    const now = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        dateCondition = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        dateCondition = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        break;
+      case 'semester':
+        dateCondition = new Date(now.getFullYear(), now.getMonth() < 6 ? 0 : 6, 1);
+        break;
+      case 'year':
+        dateCondition = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const baseQuery = db.select().from(walkthroughs);
+    let query = baseQuery;
+
+    if (locationFilter && locationFilter !== 'all') {
+      query = query.where(eq(walkthroughs.locationId, locationFilter));
+    }
+
+    if (dateCondition) {
+      query = query.where(gte(walkthroughs.dateTime, dateCondition));
+    }
+
+    const walkthroughData = await query;
+
+    // Calculate statistics
+    const totalWalkthroughs = walkthroughData.length;
+    const thisWeek = walkthroughData.filter(w => 
+      new Date(w.dateTime) >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    ).length;
+
+    const uniqueTeachers = new Set(walkthroughData.map(w => w.teacherId)).size;
+    
+    const validEngagements = walkthroughData.filter(w => w.engagementLevel);
+    const avgEngagement = validEngagements.length > 0 
+      ? validEngagements.reduce((acc, w) => acc + parseInt(w.engagementLevel), 0) / validEngagements.length 
+      : 0;
+
+    // Get observer count
+    const uniqueObservers = new Set(walkthroughData.map(w => w.createdBy)).size;
+
+    // Get active locations count
+    const activeLocationsResult = await db
+      .select({ count: count() })
+      .from(locations)
+      .where(eq(locations.active, true));
+
+    return {
+      totalWalkthroughs,
+      thisWeek,
+      uniqueTeachers,
+      avgEngagement,
+      totalObservers: uniqueObservers,
+      activeLocations: activeLocationsResult[0]?.count || 0,
+    };
+  }
+
+  async getLocationStats(dateRange?: string): Promise<any[]> {
+    let dateCondition;
+    const now = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        dateCondition = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        dateCondition = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        break;
+      case 'semester':
+        dateCondition = new Date(now.getFullYear(), now.getMonth() < 6 ? 0 : 6, 1);
+        break;
+      case 'year':
+        dateCondition = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const result = await db
+      .select({
+        locationId: walkthroughs.locationId,
+        locationName: locations.name,
+        walkthroughCount: sql<number>`COUNT(${walkthroughs.id})`,
+        avgEngagement: sql<number>`AVG(CASE 
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
+        END)`,
+        uniqueTeachers: sql<number>`COUNT(DISTINCT ${walkthroughs.teacherId})`,
+      })
+      .from(walkthroughs)
+      .innerJoin(locations, eq(walkthroughs.locationId, locations.id))
+      .where(dateCondition ? gte(walkthroughs.dateTime, dateCondition) : sql`true`)
+      .groupBy(walkthroughs.locationId, locations.name)
+      .orderBy(sql`COUNT(${walkthroughs.id}) DESC`);
+
+    return result.map(row => ({
+      locationName: row.locationName,
+      walkthroughCount: row.walkthroughCount,
+      avgEngagement: row.avgEngagement || 0,
+      uniqueTeachers: row.uniqueTeachers,
+    }));
+  }
+
+  async getLeadershipSubjectDistribution(locationFilter?: string, dateRange?: string): Promise<any[]> {
+    let dateCondition;
+    const now = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        dateCondition = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        dateCondition = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        break;
+      case 'semester':
+        dateCondition = new Date(now.getFullYear(), now.getMonth() < 6 ? 0 : 6, 1);
+        break;
+      case 'year':
+        dateCondition = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    let query = db
+      .select({
+        subject: walkthroughs.subject,
+        count: sql<number>`COUNT(*)`,
+        avgRating: sql<number>`AVG(CASE 
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
+        END)`,
+      })
+      .from(walkthroughs);
+
+    if (locationFilter && locationFilter !== 'all') {
+      query = query.where(eq(walkthroughs.locationId, locationFilter));
+    }
+
+    if (dateCondition) {
+      query = query.where(gte(walkthroughs.dateTime, dateCondition));
+    }
+
+    const result = await query
+      .groupBy(walkthroughs.subject)
+      .orderBy(sql`COUNT(*) DESC`);
+
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    
+    return result.map((row, index) => ({
+      subject: row.subject,
+      count: row.count,
+      avgRating: row.avgRating || 0,
+      color: colors[index % colors.length],
+    }));
+  }
+
+  async getStandardsTracking(locationFilter?: string, dateRange?: string): Promise<any[]> {
+    // Mock data for standards tracking since this would require additional schema
+    // In a real implementation, you'd have a standards field in walkthroughs table
+    const mockStandards = [
+      { standard: "CCSS.MATH.CONTENT.K.CC.A.1", frequency: 15, percentage: 78 },
+      { standard: "CCSS.MATH.CONTENT.K.CC.A.2", frequency: 12, percentage: 63 },
+      { standard: "CCSS.ELA-LITERACY.K.RL.1.1", frequency: 18, percentage: 94 },
+      { standard: "CCSS.ELA-LITERACY.K.RL.1.2", frequency: 10, percentage: 52 },
+      { standard: "NGSS.K-ESS2-1", frequency: 8, percentage: 42 },
+    ];
+
+    return mockStandards;
+  }
+
+  async getTeacherPerformance(locationFilter?: string, dateRange?: string): Promise<any[]> {
+    let dateCondition;
+    const now = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        dateCondition = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        dateCondition = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        break;
+      case 'semester':
+        dateCondition = new Date(now.getFullYear(), now.getMonth() < 6 ? 0 : 6, 1);
+        break;
+      case 'year':
+        dateCondition = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        dateCondition = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    let query = db
+      .select({
+        teacherId: walkthroughs.teacherId,
+        teacherName: sql<string>`${teachers.firstName} || ' ' || ${teachers.lastName}`,
+        totalObservations: sql<number>`COUNT(${walkthroughs.id})`,
+        avgEngagement: sql<number>`AVG(CASE 
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
+        END)`,
+        lastObservation: sql<string>`MAX(${walkthroughs.dateTime})`,
+      })
+      .from(walkthroughs)
+      .innerJoin(teachers, eq(walkthroughs.teacherId, teachers.id));
+
+    if (locationFilter && locationFilter !== 'all') {
+      query = query.where(eq(walkthroughs.locationId, locationFilter));
+    }
+
+    if (dateCondition) {
+      query = query.where(gte(walkthroughs.dateTime, dateCondition));
+    }
+
+    const result = await query
+      .groupBy(walkthroughs.teacherId, teachers.firstName, teachers.lastName)
+      .orderBy(sql`COUNT(${walkthroughs.id}) DESC`);
+
+    return result.map(row => ({
+      teacherId: row.teacherId,
+      teacherName: row.teacherName,
+      totalObservations: row.totalObservations,
+      avgEngagement: row.avgEngagement || 0,
+      recentTrend: Math.random() > 0.5 ? 'improving' : Math.random() > 0.5 ? 'declining' : 'stable', // Mock trend
+      lastObservation: new Date(row.lastObservation).toLocaleDateString(),
+    }));
+  }
+
+  async getLeadershipEngagementTrends(locationFilter?: string, dateRange?: string): Promise<any[]> {
+    let dateCondition;
+    const now = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        dateCondition = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        dateCondition = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'quarter':
+        dateCondition = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case 'semester':
+        dateCondition = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+        break;
+      case 'year':
+        dateCondition = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        dateCondition = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    let query = db
+      .select({
+        date: sql<string>`DATE(${walkthroughs.dateTime})`,
+        avgEngagement: sql<number>`AVG(CASE 
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
+        END)`,
+      })
+      .from(walkthroughs);
+
+    if (locationFilter && locationFilter !== 'all') {
+      query = query.where(eq(walkthroughs.locationId, locationFilter));
+    }
+
+    if (dateCondition) {
+      query = query.where(gte(walkthroughs.dateTime, dateCondition));
+    }
+
+    const result = await query
+      .groupBy(sql`DATE(${walkthroughs.dateTime})`)
+      .orderBy(sql`DATE(${walkthroughs.dateTime})`);
+
+    return result.map(row => ({
+      date: row.date,
+      avgEngagement: row.avgEngagement || 0,
+    }));
+  }
 }
 
 export const storage = new DatabaseStorage();

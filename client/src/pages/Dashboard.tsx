@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { ClipboardCheck, Plus, LogOut, FileText, CheckSquare } from "lucide-react";
+import { ClipboardCheck, Plus, LogOut, FileText, CheckSquare, Users } from "lucide-react";
 import { Link } from "wouter";
 import StatsCards from "@/components/StatsCards";
 import FilterBar from "@/components/FilterBar";
@@ -90,12 +90,22 @@ export default function Dashboard() {
             <p className="text-gray-600 mt-1">Manage and review classroom observations</p>
           </div>
           <div className="mt-4 sm:mt-0 flex gap-3">
-            <Link href="/coach/dashboard">
-              <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-                <CheckSquare className="w-4 h-4 mr-2" />
-                Coach Dashboard
-              </Button>
-            </Link>
+            {(user?.role === 'coach' || user?.role === 'admin') && (
+              <Link href="/coach/dashboard">
+                <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                  <CheckSquare className="w-4 h-4 mr-2" />
+                  Coach Dashboard
+                </Button>
+              </Link>
+            )}
+            {(user?.role === 'leadership' || user?.role === 'admin') && (
+              <Link href="/leadership/dashboard">
+                <Button variant="outline" className="border-purple-600 text-purple-600 hover:bg-purple-50">
+                  <Users className="w-4 h-4 mr-2" />
+                  Leadership Dashboard
+                </Button>
+              </Link>
+            )}
             <Link href="/walkthrough/new">
               <Button className="bg-primary-600 hover:bg-primary-700">
                 <Plus className="w-4 h-4 mr-2" />

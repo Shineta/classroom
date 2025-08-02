@@ -549,6 +549,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leadership Analytics Routes
+  app.get("/api/leadership/overview", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has leadership or admin role
+      if (req.user.role !== 'leadership' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { location, dateRange } = req.query;
+      const overview = await storage.getLeadershipOverview(location, dateRange);
+      res.json(overview);
+    } catch (error) {
+      console.error("Error fetching leadership overview:", error);
+      res.status(500).json({ message: "Failed to fetch leadership overview" });
+    }
+  });
+
+  app.get("/api/leadership/locations", isAuthenticated, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'leadership' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { dateRange } = req.query;
+      const locationStats = await storage.getLocationStats(dateRange);
+      res.json(locationStats);
+    } catch (error) {
+      console.error("Error fetching location stats:", error);
+      res.status(500).json({ message: "Failed to fetch location stats" });
+    }
+  });
+
+  app.get("/api/leadership/subjects", isAuthenticated, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'leadership' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { location, dateRange } = req.query;
+      const subjectData = await storage.getLeadershipSubjectDistribution(location, dateRange);
+      res.json(subjectData);
+    } catch (error) {
+      console.error("Error fetching leadership subject distribution:", error);
+      res.status(500).json({ message: "Failed to fetch subject distribution" });
+    }
+  });
+
+  app.get("/api/leadership/standards", isAuthenticated, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'leadership' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { location, dateRange } = req.query;
+      const standardsData = await storage.getStandardsTracking(location, dateRange);
+      res.json(standardsData);
+    } catch (error) {
+      console.error("Error fetching standards tracking:", error);
+      res.status(500).json({ message: "Failed to fetch standards tracking" });
+    }
+  });
+
+  app.get("/api/leadership/teachers", isAuthenticated, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'leadership' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { location, dateRange } = req.query;
+      const teacherData = await storage.getTeacherPerformance(location, dateRange);
+      res.json(teacherData);
+    } catch (error) {
+      console.error("Error fetching teacher performance:", error);
+      res.status(500).json({ message: "Failed to fetch teacher performance" });
+    }
+  });
+
+  app.get("/api/leadership/engagement-trends", isAuthenticated, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'leadership' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { location, dateRange } = req.query;
+      const trendsData = await storage.getLeadershipEngagementTrends(location, dateRange);
+      res.json(trendsData);
+    } catch (error) {
+      console.error("Error fetching engagement trends:", error);
+      res.status(500).json({ message: "Failed to fetch engagement trends" });
+    }
+  });
+
   // File upload routes
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {

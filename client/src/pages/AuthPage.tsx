@@ -244,6 +244,7 @@ export default function AuthPage() {
                                 <SelectItem value="observer">Observer</SelectItem>
                                 <SelectItem value="admin">Administrator</SelectItem>
                                 <SelectItem value="coach">Instructional Coach</SelectItem>
+                                <SelectItem value="leadership">Leadership (Principal/Department Head)</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
