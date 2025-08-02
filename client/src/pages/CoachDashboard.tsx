@@ -235,30 +235,35 @@ export default function CoachDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Instructional Coach Dashboard</h1>
-              <p className="text-gray-600">Manage walkthrough reviews, provide feedback, and track team performance</p>
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <CheckCircle className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Instructional Coach Dashboard</h1>
+                <p className="text-blue-100">Review walkthroughs • Provide feedback • Track team performance</p>
+              </div>
             </div>
             <div className="flex gap-3">
               <Button 
                 onClick={() => window.location.href = '/coach/insights'} 
-                variant="outline"
-                className="flex items-center gap-2"
+                variant="secondary"
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30"
               >
                 <BarChart3 className="h-4 w-4" />
-                Coach Analytics
+                Analytics Dashboard
               </Button>
               <Button 
                 onClick={() => window.history.back()} 
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-white/30 text-white hover:bg-white/10"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Dashboard
+                Back to Main Dashboard
               </Button>
             </div>
           </div>
@@ -266,36 +271,72 @@ export default function CoachDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Coach Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+            <div className="flex items-center">
+              <AlertCircle className="h-8 w-8 text-orange-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
+                <p className="text-2xl font-bold text-gray-900">{pendingReviews.length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-blue-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-gray-900">{inProgressReviews.length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+            <div className="flex items-center">
+              <CheckCircle className="h-8 w-8 text-green-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">{completedReviews.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
       <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm">
+          <TabsTrigger value="pending" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
             <AlertCircle className="h-4 w-4" />
             Pending Reviews ({pendingReviews.length})
           </TabsTrigger>
-          <TabsTrigger value="in-progress" className="flex items-center gap-2">
+          <TabsTrigger value="in-progress" className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
             <Clock className="h-4 w-4" />
             In Progress ({inProgressReviews.length})
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex items-center gap-2">
+          <TabsTrigger value="completed" className="flex items-center gap-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
             <CheckCircle className="h-4 w-4" />
             Completed ({completedReviews.length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-500" />
-                Pending Reviews
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 border-b">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  <span>Pending Reviews - Action Required</span>
+                </div>
+                <div className="text-sm text-orange-600 font-normal">
+                  {pendingReviews.filter(w => w.priority === 'high').length} high priority
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {renderTabContent(
                 pendingReviews,
                 pendingLoading,
-                "No pending reviews at this time.",
+                "No pending reviews at this time. Great job staying on top of your review queue!",
                 true,
                 'start'
               )}
@@ -304,18 +345,18 @@ export default function CoachDashboard() {
         </TabsContent>
 
         <TabsContent value="in-progress">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b">
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-blue-500" />
-                In Progress Reviews
+                <span>In Progress Reviews - Complete Your Feedback</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {renderTabContent(
                 inProgressReviews,
                 inProgressLoading,
-                "No reviews currently in progress.",
+                "No reviews currently in progress. Start a pending review to begin the feedback process.",
                 true,
                 'complete'
               )}
@@ -324,18 +365,18 @@ export default function CoachDashboard() {
         </TabsContent>
 
         <TabsContent value="completed">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 border-b">
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                Completed Reviews
+                <span>Completed Reviews - Archive & Reference</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {renderTabContent(
                 completedReviews,
                 completedLoading,
-                "No completed reviews yet.",
+                "No completed reviews yet. Once you complete reviews, they'll appear here for reference.",
                 false,
                 'complete'
               )}
