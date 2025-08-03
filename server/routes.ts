@@ -1003,7 +1003,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lesson-plans/my-plans", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id;
+      console.log("My-plans request - User:", req.user?.id, req.user?.username);
+      console.log("My-plans request - UserId extracted:", userId);
+      
+      if (!userId) {
+        console.log("No userId found in request");
+        return res.status(400).json({ message: "User ID not found" });
+      }
+      
       const lessonPlans = await storage.getLessonPlans({ createdBy: userId });
+      console.log("My-plans query result:", lessonPlans?.length, "lesson plans found");
       res.json(lessonPlans);
     } catch (error) {
       console.error("Error fetching user lesson plans:", error);
