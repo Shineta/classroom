@@ -38,13 +38,32 @@ const formSchema = z.object({
   studentCount: z.number().min(0).optional(),
   lessonTopics: z.string().optional(),
   
-  evidenceOfLearning: z.string().optional(),
+  // Redesigned Evidence of Student Learning - Multi-select checklist
+  evidenceOfLearning: z.object({
+    checkedItems: z.array(z.string()).optional(),
+    otherItem: z.string().optional(),
+    clarification: z.string().max(100).optional(),
+  }).optional(),
+  
+  // Redesigned Behavior & Routines with compliance and rating
   behaviorRoutines: z.object({
     routines: z.array(z.string()),
+    complianceLevel: z.enum(["all", "most", "some", "none"]).optional(),
+    consistencyRating: z.number().min(1).max(5).optional(),
     notes: z.string().optional(),
   }).optional(),
+  
+  // Enhanced Climate with conditional follow-up
   climate: z.enum(["warm", "neutral", "tense"]).optional(),
-  climateNotes: z.string().optional(),
+  climateContributors: z.array(z.string()).optional(),
+  
+  // Redesigned Additional Notes with preset tags
+  additionalNotesTags: z.array(z.string()).optional(),
+  additionalNotesText: z.string().max(100).optional(),
+  
+  // New coaching and tracking features
+  flagForCoaching: z.boolean().optional(),
+  observerDuration: z.number().optional(),
   engagementLevel: z.enum(["1", "2", "3", "4", "5"]).optional(),
   transitions: z.enum(["smooth", "needs-improvement"]).optional(),
   transitionComments: z.string().optional(),
@@ -84,6 +103,11 @@ export default function WalkthroughForm() {
   const [selectedObservers, setSelectedObservers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [startTime] = useState(new Date());
+  const [evidenceLearningOther, setEvidenceLearningOther] = useState("");
+  const [showEvidenceOther, setShowEvidenceOther] = useState(false);
+  const [selectedEvidence, setSelectedEvidence] = useState<string[]>([]);
+  const [additionalNotesOther, setAdditionalNotesOther] = useState("");
+  const [showNotesOther, setShowNotesOther] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lessonPlanMode, setLessonPlanMode] = useState<"upload" | "select">("upload");
   const [selectedLessonPlan, setSelectedLessonPlan] = useState<LessonPlanWithDetails | null>(null);
@@ -351,11 +375,14 @@ export default function WalkthroughForm() {
     }
   };
 
-  // Form submission
+  // Form submission with duration tracking
   const onSubmit = (data: FormData) => {
+    const observerDuration = Math.round((new Date().getTime() - startTime.getTime()) / 1000 / 60); // Duration in minutes
+    
     const formData = {
       ...data,
       observerIds: selectedObservers.map(obs => obs.id),
+      observerDuration,
     };
 
     if (isEditing) {
@@ -367,22 +394,18 @@ export default function WalkthroughForm() {
 
   const handleSaveDraft = () => {
     const data = form.getValues();
-    onSubmit({ ...data, status: "draft" } as any);
+    const observerDuration = Math.round((new Date().getTime() - startTime.getTime()) / 1000 / 60);
+    onSubmit({ ...data, status: "draft", observerDuration } as any);
   };
 
   const handleComplete = () => {
-    console.log("Complete Walkthrough clicked - Debug:", {
-      walkthroughId,
-      isEditing,
-      formData: form.getValues(),
-      currentPath: window.location.pathname
-    });
     const data = form.getValues();
+    const observerDuration = Math.round((new Date().getTime() - startTime.getTime()) / 1000 / 60);
     
     if (isEditing) {
-      updateMutation.mutate({ ...data, status: "completed", isCompletion: true } as any);
+      updateMutation.mutate({ ...data, status: "completed", observerDuration, isCompletion: true } as any);
     } else {
-      createMutation.mutate({ ...data, status: "completed" } as any);
+      createMutation.mutate({ ...data, status: "completed", observerDuration } as any);
     }
   };
 
@@ -985,141 +1008,457 @@ export default function WalkthroughForm() {
                   </div>
                 )}
 
-                {/* Observations Tab */}
+                {/* Observations Tab - Redesigned */}
                 {currentTab === "observations" && (
                   <div className="space-y-6">
+                    {/* Evidence of Student Learning - Multi-select Checklist */}
                     <FormField
                       control={form.control}
                       name="evidenceOfLearning"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Evidence of Student Learning</FormLabel>
+                          <FormLabel className="text-lg font-medium">Evidence of Student Learning</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="Describe observable evidence of student learning and understanding..."
-                              rows={4}
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                handleFieldChange("evidenceOfLearning", e.target.value);
-                              }}
-                            />
+                            <div className="space-y-3">
+                              {[
+                                "Students applied new vocabulary",
+                                "Students used content-specific tools/technology", 
+                                "Students collaborated effectively",
+                                "Students explained their thinking",
+                                "Observable formative assessment was used",
+                                "Product/work sample was produced"
+                              ].map((evidenceItem, index) => (
+                                <div key={index} className="flex items-start space-x-3">
+                                  <Checkbox
+                                    id={`evidence-${index}`}
+                                    checked={selectedEvidence.includes(evidenceItem)}
+                                    onCheckedChange={(checked) => {
+                                      const newEvidence = checked
+                                        ? [...selectedEvidence, evidenceItem]
+                                        : selectedEvidence.filter(e => e !== evidenceItem);
+                                      setSelectedEvidence(newEvidence);
+                                      field.onChange({
+                                        checkedItems: newEvidence,
+                                        otherItem: evidenceLearningOther,
+                                        clarification: field.value?.clarification || ""
+                                      });
+                                      handleFieldChange("evidenceOfLearning", {
+                                        checkedItems: newEvidence,
+                                        otherItem: evidenceLearningOther,
+                                        clarification: field.value?.clarification || ""
+                                      });
+                                    }}
+                                  />
+                                  <label htmlFor={`evidence-${index}`} className="text-sm text-gray-700 flex-1">
+                                    {evidenceItem}
+                                  </label>
+                                </div>
+                              ))}
+                              
+                              {/* Add Other Option */}
+                              <div className="flex items-start space-x-3">
+                                <Checkbox
+                                  id="evidence-other"
+                                  checked={showEvidenceOther}
+                                  onCheckedChange={(checked) => {
+                                    setShowEvidenceOther(!!checked);
+                                    if (!checked) {
+                                      setEvidenceLearningOther("");
+                                      field.onChange({
+                                        checkedItems: selectedEvidence,
+                                        otherItem: "",
+                                        clarification: field.value?.clarification || ""
+                                      });
+                                    }
+                                  }}
+                                />
+                                <label htmlFor="evidence-other" className="text-sm text-gray-700 flex-1">
+                                  Other (specify below)
+                                </label>
+                              </div>
+                              
+                              {showEvidenceOther && (
+                                <Input
+                                  placeholder="Specify other evidence..."
+                                  value={evidenceLearningOther}
+                                  onChange={(e) => {
+                                    setEvidenceLearningOther(e.target.value);
+                                    field.onChange({
+                                      checkedItems: selectedEvidence,
+                                      otherItem: e.target.value,
+                                      clarification: field.value?.clarification || ""
+                                    });
+                                  }}
+                                  className="ml-6"
+                                />
+                              )}
+                              
+                              {/* Optional clarification */}
+                              <div className="ml-6 pt-2">
+                                <Input
+                                  placeholder="Optional: Brief clarification (max 100 chars)"
+                                  maxLength={100}
+                                  value={field.value?.clarification || ""}
+                                  onChange={(e) => {
+                                    field.onChange({
+                                      checkedItems: selectedEvidence,
+                                      otherItem: evidenceLearningOther,
+                                      clarification: e.target.value
+                                    });
+                                  }}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {(field.value?.clarification || "").length}/100 characters
+                                </p>
+                              </div>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <div>
-                      <FormLabel className="text-sm font-medium text-gray-700 mb-3 block">
-                        Behavior & Routines Observed
-                      </FormLabel>
-                      <div className="space-y-3">
-                        {[
-                          "Students follow established classroom procedures",
-                          "Clear expectations are communicated",
-                          "Positive behavior reinforcement is used",
-                          "Students are actively engaged"
-                        ].map((routine, index) => (
-                          <div key={index} className="flex items-start space-x-3">
-                            <Checkbox
-                              id={`routine-${index}`}
-                              checked={form.watch("behaviorRoutines")?.routines?.includes(routine)}
-                              onCheckedChange={(checked) => {
-                                const currentRoutines = form.watch("behaviorRoutines")?.routines || [];
-                                const newRoutines = checked
-                                  ? [...currentRoutines, routine]
-                                  : currentRoutines.filter(r => r !== routine);
-                                form.setValue("behaviorRoutines", { 
-                                  ...form.watch("behaviorRoutines"),
-                                  routines: newRoutines 
-                                });
-                                handleFieldChange("behaviorRoutines", { 
-                                  ...form.watch("behaviorRoutines"),
-                                  routines: newRoutines 
-                                });
-                              }}
-                            />
-                            <label htmlFor={`routine-${index}`} className="text-sm text-gray-700">
-                              {routine}
-                            </label>
-                          </div>
-                        ))}
-                        <Textarea
-                          placeholder="Additional notes about behavior and routines..."
-                          rows={2}
-                          value={form.watch("behaviorRoutines")?.notes || ""}
-                          onChange={(e) => {
-                            const newValue = { 
-                              ...form.watch("behaviorRoutines"),
-                              notes: e.target.value 
-                            };
-                            form.setValue("behaviorRoutines", {
-                              routines: form.watch("behaviorRoutines")?.routines || [],
-                              notes: e.target.value
-                            });
-                            handleFieldChange("behaviorRoutines", newValue);
-                          }}
-                        />
-                      </div>
-                    </div>
+                    {/* Behavior & Routines - Enhanced with Compliance and Rating */}
+                    <FormField
+                      control={form.control}
+                      name="behaviorRoutines"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-lg font-medium">Behavior & Routines Observed</FormLabel>
+                          <FormControl>
+                            <div className="space-y-4">
+                              {/* Checkboxes for routines */}
+                              <div className="space-y-3">
+                                {[
+                                  "Students follow established classroom procedures",
+                                  "Clear expectations are communicated",
+                                  "Positive behavior reinforcement is used",
+                                  "Students are actively engaged"
+                                ].map((routine, index) => (
+                                  <div key={index} className="flex items-start space-x-3">
+                                    <Checkbox
+                                      id={`routine-${index}`}
+                                      checked={field.value?.routines?.includes(routine) || false}
+                                      onCheckedChange={(checked) => {
+                                        const currentRoutines = field.value?.routines || [];
+                                        const newRoutines = checked
+                                          ? [...currentRoutines, routine]
+                                          : currentRoutines.filter(r => r !== routine);
+                                        const newValue = { 
+                                          ...field.value,
+                                          routines: newRoutines 
+                                        };
+                                        field.onChange(newValue);
+                                        handleFieldChange("behaviorRoutines", newValue);
+                                      }}
+                                    />
+                                    <label htmlFor={`routine-${index}`} className="text-sm text-gray-700">
+                                      {routine}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* Level of Compliance Toggle Group */}
+                              <div>
+                                <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Level of Compliance
+                                </FormLabel>
+                                <div className="flex space-x-2">
+                                  {[
+                                    { value: "all", label: "All students", color: "bg-green-100 text-green-800 border-green-300" },
+                                    { value: "most", label: "Most students", color: "bg-blue-100 text-blue-800 border-blue-300" },
+                                    { value: "some", label: "Some students", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+                                    { value: "none", label: "None observed", color: "bg-red-100 text-red-800 border-red-300" }
+                                  ].map((option) => (
+                                    <button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() => {
+                                        const newValue = { 
+                                          ...field.value,
+                                          complianceLevel: option.value as any
+                                        };
+                                        field.onChange(newValue);
+                                        handleFieldChange("behaviorRoutines", newValue);
+                                      }}
+                                      className={`px-3 py-1 text-xs border rounded-full transition-colors ${
+                                        field.value?.complianceLevel === option.value
+                                          ? option.color
+                                          : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+                                      }`}
+                                    >
+                                      {option.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Consistency Rating Slider */}
+                              <div>
+                                <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Overall Classroom Routine Consistency (1-5 scale)
+                                </FormLabel>
+                                <div className="flex items-center space-x-4">
+                                  <span className="text-sm text-gray-500">1</span>
+                                  <input
+                                    type="range"
+                                    min="1"
+                                    max="5"
+                                    value={field.value?.consistencyRating || 3}
+                                    onChange={(e) => {
+                                      const newValue = { 
+                                        ...field.value,
+                                        consistencyRating: parseInt(e.target.value)
+                                      };
+                                      field.onChange(newValue);
+                                      handleFieldChange("behaviorRoutines", newValue);
+                                    }}
+                                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                  />
+                                  <span className="text-sm text-gray-500">5</span>
+                                  <span className="text-sm font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    {field.value?.consistencyRating || 3}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Optional notes */}
+                              <Textarea
+                                placeholder="Additional notes about behavior and routines..."
+                                rows={2}
+                                value={field.value?.notes || ""}
+                                onChange={(e) => {
+                                  const newValue = { 
+                                    ...field.value,
+                                    notes: e.target.value 
+                                  };
+                                  field.onChange(newValue);
+                                  handleFieldChange("behaviorRoutines", newValue);
+                                }}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
+                    {/* Enhanced Classroom Climate with Conditional Follow-up */}
                     <FormField
                       control={form.control}
                       name="climate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Classroom Climate</FormLabel>
+                          <FormLabel className="text-lg font-medium">Classroom Climate</FormLabel>
                           <FormControl>
-                            <RadioGroup
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                handleFieldChange("climate", value);
-                              }}
-                              defaultValue={field.value}
-                              className="flex space-x-4"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="warm" id="warm" />
-                                <label htmlFor="warm" className="text-sm text-gray-700 flex items-center">
-                                  <span className="text-green-500 mr-1">😊</span>Warm
-                                </label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="neutral" id="neutral" />
-                                <label htmlFor="neutral" className="text-sm text-gray-700 flex items-center">
-                                  <span className="text-yellow-500 mr-1">😐</span>Neutral
-                                </label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="tense" id="tense" />
-                                <label htmlFor="tense" className="text-sm text-gray-700 flex items-center">
-                                  <span className="text-red-500 mr-1">😟</span>Tense
-                                </label>
-                              </div>
-                            </RadioGroup>
+                            <div className="space-y-4">
+                              <RadioGroup
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  handleFieldChange("climate", value);
+                                  // Reset contributors when climate changes
+                                  form.setValue("climateContributors", []);
+                                }}
+                                defaultValue={field.value}
+                                className="flex space-x-6"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="warm" id="warm" />
+                                  <label htmlFor="warm" className="text-sm text-gray-700 flex items-center cursor-pointer">
+                                    <span className="text-2xl mr-2">😊</span>Warm
+                                  </label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="neutral" id="neutral" />
+                                  <label htmlFor="neutral" className="text-sm text-gray-700 flex items-center cursor-pointer">
+                                    <span className="text-2xl mr-2">😐</span>Neutral
+                                  </label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="tense" id="tense" />
+                                  <label htmlFor="tense" className="text-sm text-gray-700 flex items-center cursor-pointer">
+                                    <span className="text-2xl mr-2">🥶</span>Tense
+                                  </label>
+                                </div>
+                              </RadioGroup>
+                              
+                              {/* Conditional Follow-up Dropdowns */}
+                              {field.value && field.value !== "neutral" && (
+                                <FormField
+                                  control={form.control}
+                                  name="climateContributors"
+                                  render={({ field: contributorsField }) => (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                      <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                                        What contributed to this climate?
+                                      </FormLabel>
+                                      <div className="space-y-2">
+                                        {field.value === "warm" && [
+                                          "Peer support observed",
+                                          "Student-led activity",
+                                          "Positive energy in room",
+                                          "Clear engagement with content",
+                                          "Collaborative learning",
+                                          "Teacher enthusiasm"
+                                        ].map((contributor, index) => (
+                                          <div key={index} className="flex items-center space-x-2">
+                                            <Checkbox
+                                              id={`warm-${index}`}
+                                              checked={contributorsField.value?.includes(contributor) || false}
+                                              onCheckedChange={(checked) => {
+                                                const current = contributorsField.value || [];
+                                                const updated = checked
+                                                  ? [...current, contributor]
+                                                  : current.filter(c => c !== contributor);
+                                                contributorsField.onChange(updated);
+                                                handleFieldChange("climateContributors", updated);
+                                              }}
+                                            />
+                                            <label htmlFor={`warm-${index}`} className="text-sm text-gray-700">
+                                              {contributor}
+                                            </label>
+                                          </div>
+                                        ))}
+                                        
+                                        {field.value === "tense" && [
+                                          "Technology issues observed",
+                                          "Student conflict evident",
+                                          "Unclear directions given",
+                                          "Time pressure apparent",
+                                          "Disruptions occurred",
+                                          "Low engagement level"
+                                        ].map((contributor, index) => (
+                                          <div key={index} className="flex items-center space-x-2">
+                                            <Checkbox
+                                              id={`tense-${index}`}
+                                              checked={contributorsField.value?.includes(contributor) || false}
+                                              onCheckedChange={(checked) => {
+                                                const current = contributorsField.value || [];
+                                                const updated = checked
+                                                  ? [...current, contributor]
+                                                  : current.filter(c => c !== contributor);
+                                                contributorsField.onChange(updated);
+                                                handleFieldChange("climateContributors", updated);
+                                              }}
+                                            />
+                                            <label htmlFor={`tense-${index}`} className="text-sm text-gray-700">
+                                              {contributor}
+                                            </label>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                />
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
+                    {/* Redesigned Additional Notes with Preset Tags */}
                     <FormField
                       control={form.control}
-                      name="climateNotes"
+                      name="additionalNotesTags"
                       render={({ field }) => (
                         <FormItem>
+                          <FormLabel className="text-lg font-medium">Additional Notes</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="Describe the classroom climate and atmosphere..."
-                              rows={2}
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                handleFieldChange("climateNotes", e.target.value);
+                            <div className="space-y-4">
+                              <div>
+                                <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Select relevant tags:
+                                </FormLabel>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {[
+                                    "Off-task behavior observed",
+                                    "Smooth transitions noted",
+                                    "Technology usage issues",
+                                    "Positive reinforcement heard",
+                                    "Differentiation evident",
+                                    "Time management concerns",
+                                    "Student questions encouraged",
+                                    "Clear learning objectives"
+                                  ].map((tag, index) => (
+                                    <div key={index} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`tag-${index}`}
+                                        checked={field.value?.includes(tag) || false}
+                                        onCheckedChange={(checked) => {
+                                          const current = field.value || [];
+                                          const updated = checked
+                                            ? [...current, tag]
+                                            : current.filter(t => t !== tag);
+                                          field.onChange(updated);
+                                          handleFieldChange("additionalNotesTags", updated);
+                                        }}
+                                      />
+                                      <label htmlFor={`tag-${index}`} className="text-sm text-gray-700">
+                                        {tag}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Short clarification text */}
+                              <FormField
+                                control={form.control}
+                                name="additionalNotesText"
+                                render={({ field: textField }) => (
+                                  <div>
+                                    <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                                      Brief clarification (optional, max 100 characters):
+                                    </FormLabel>
+                                    <Input
+                                      placeholder="Add brief context or details..."
+                                      maxLength={100}
+                                      value={textField.value || ""}
+                                      onChange={(e) => {
+                                        textField.onChange(e.target.value);
+                                        handleFieldChange("additionalNotesText", e.target.value);
+                                      }}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {(textField.value || "").length}/100 characters
+                                    </p>
+                                  </div>
+                                )}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Flag for Coaching Follow-Up */}
+                    <FormField
+                      control={form.control}
+                      name="flagForCoaching"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <Checkbox
+                              id="coaching-flag"
+                              checked={field.value || false}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                handleFieldChange("flagForCoaching", checked);
                               }}
                             />
-                          </FormControl>
+                            <div>
+                              <label htmlFor="coaching-flag" className="text-sm font-medium text-gray-900 cursor-pointer">
+                                Flag for Coaching Follow-Up
+                              </label>
+                              <p className="text-xs text-gray-600">
+                                Check this to request additional coaching support for this observation
+                              </p>
+                            </div>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

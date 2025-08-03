@@ -102,6 +102,7 @@ export const lessonPlans = pgTable("lesson_plans", {
 });
 
 // Enums for walkthrough data
+export const complianceLevelEnum = pgEnum("compliance_level", ["all", "most", "some", "none"]);
 export const engagementLevelEnum = pgEnum("engagement_level", ["1", "2", "3", "4", "5"]);
 export const climateEnum = pgEnum("climate", ["warm", "neutral", "tense"]);
 export const transitionsEnum = pgEnum("transitions", ["smooth", "needs-improvement"]);
@@ -130,11 +131,19 @@ export const walkthroughs = pgTable("walkthroughs", {
   studentCount: integer("student_count"), // Number of students present
   lessonTopics: text("lesson_topics"), // Additional content description beyond objective
   
-  // Observations
-  evidenceOfLearning: text("evidence_of_learning"),
-  behaviorRoutines: jsonb("behavior_routines"), // {routines: string[], notes: string}
+  // Redesigned structured observations
+  evidenceOfLearning: jsonb("evidence_of_learning"), // {checkedItems: string[], otherItem: string, clarification: string}
+  behaviorRoutines: jsonb("behavior_routines"), // {routines: string[], complianceLevel: string, consistencyRating: number, notes: string}
   climate: climateEnum("climate"),
-  climateNotes: text("climate_notes"),
+  climateContributors: jsonb("climate_contributors").$type<string[]>().default([]), // Conditional follow-up based on climate
+  
+  // Redesigned additional notes with preset tags
+  additionalNotesTags: jsonb("additional_notes_tags").$type<string[]>().default([]),
+  additionalNotesText: varchar("additional_notes_text", { length: 100 }),
+  
+  // New coaching and tracking features
+  flagForCoaching: boolean("flag_for_coaching").default(false),
+  observerDuration: integer("observer_duration"), // Duration in minutes that observer spent
   
   // Assessment & Ratings
   engagementLevel: engagementLevelEnum("engagement_level"),
@@ -336,7 +345,11 @@ export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
   evidenceOfLearning: true,
   behaviorRoutines: true,
   climate: true,
-  climateNotes: true,
+  climateContributors: true,
+  additionalNotesTags: true,
+  additionalNotesText: true,
+  flagForCoaching: true,
+  observerDuration: true,
   engagementLevel: true,
   transitions: true,
   transitionComments: true,
