@@ -173,12 +173,16 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
     });
   };
 
-  const onSubmit = (data: InsertLessonPlan) => {
-    // Convert date string back to Date object
+  const onSubmit = (data: any) => {
+    // Add user ID and teacher ID
     const processedData = {
       ...data,
-      dateScheduled: data.dateScheduled ? new Date(data.dateScheduled) : undefined,
+      createdBy: user?.id,
+      teacherId: data.teacherId || teachers?.[0]?.id,
+      dateScheduled: data.dateScheduled ? new Date(data.dateScheduled) : null,
     };
+    
+    console.log("Submitting lesson plan data:", processedData);
     saveMutation.mutate(processedData);
   };
 
@@ -419,11 +423,11 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
                           <FormLabel>Standards Alignment</FormLabel>
                           <FormControl>
                             <StandardsSelector
-                              value={field.value || []}
+                              value={field.value as string[] || []}
                               onChange={field.onChange}
-                              subject={form.watch("subject")}
-                              gradeLevel={form.watch("gradeLevel")}
-                              lessonObjective={form.watch("objective")}
+                              subject={form.watch("subject") || ""}
+                              gradeLevel={form.watch("gradeLevel") || ""}
+                              lessonObjective={form.watch("objective") || ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -560,7 +564,7 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Status</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
