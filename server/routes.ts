@@ -893,7 +893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/lesson-plans/my-plans", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const lessonPlans = await storage.getLessonPlans({ createdBy: userId });
       res.json(lessonPlans);
     } catch (error) {
@@ -904,7 +904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/lesson-plans/stats", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const stats = await storage.getLessonPlanStats(userId);
       res.json(stats);
     } catch (error) {
@@ -928,10 +928,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/lesson-plans", isAuthenticated, async (req: any, res) => {
     try {
+      console.log("Creating lesson plan for user:", req.user);
       const lessonPlanData = insertLessonPlanSchema.parse({
         ...req.body,
-        createdBy: req.user.id,
+        createdBy: req.user?.id || req.user?.claims?.sub,
       });
+      console.log("Lesson plan data with createdBy:", lessonPlanData.createdBy);
       const lessonPlan = await storage.createLessonPlan(lessonPlanData);
       res.status(201).json(lessonPlan);
     } catch (error) {
