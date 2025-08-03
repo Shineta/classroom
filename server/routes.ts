@@ -1019,12 +1019,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get public lesson plans for observers to select from
   app.get("/api/lesson-plans/public", isAuthenticated, async (req: any, res) => {
     try {
-      const filters: any = { isPublic: true, status: "finalized" };
-      if (req.query.subject) filters.subject = req.query.subject;
-      if (req.query.gradeLevel) filters.gradeLevel = req.query.gradeLevel;
+      // First get all lesson plans without filtering, then filter manually
+      const allLessonPlans = await storage.getLessonPlans();
       
-      const lessonPlans = await storage.getLessonPlans(filters);
-      res.json(lessonPlans);
+      // Filter for public lesson plans that are either submitted or finalized
+      const publicLessonPlans = allLessonPlans.filter(plan => 
+        plan.isPublic && (plan.status === "submitted" || plan.status === "finalized")
+      );
+      
+      // Apply additional filters if provided
+      let filteredPlans = publicLessonPlans;
+      if (req.query.subject) {
+        filteredPlans = filteredPlans.filter(plan => plan.subject === req.query.subject);
+      }
+      if (req.query.gradeLevel) {
+        filteredPlans = filteredPlans.filter(plan => plan.gradeLevel === req.query.gradeLevel);
+      }
+      
+      res.json(filteredPlans);
     } catch (error) {
       console.error("Error fetching public lesson plans:", error);
       res.status(500).json({ message: "Failed to fetch public lesson plans" });

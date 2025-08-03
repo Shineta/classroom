@@ -94,6 +94,7 @@ export interface IStorage {
     createdBy?: string;
     subject?: string;
     status?: string;
+    isPublic?: boolean;
   }): Promise<LessonPlanWithDetails[]>;
   updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan>;
   deleteLessonPlan(id: string): Promise<void>;
@@ -1077,6 +1078,7 @@ export class DatabaseStorage implements IStorage {
     createdBy?: string;
     subject?: string;
     status?: string;
+    isPublic?: boolean;
   }): Promise<LessonPlanWithDetails[]> {
     let query = db.select()
       .from(lessonPlans)
@@ -1096,6 +1098,9 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.status) {
       conditions.push(eq(lessonPlans.status, filters.status));
+    }
+    if (filters?.isPublic !== undefined) {
+      conditions.push(eq(lessonPlans.isPublic, filters.isPublic));
     }
 
     if (conditions.length > 0) {
