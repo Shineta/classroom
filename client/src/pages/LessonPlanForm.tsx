@@ -45,6 +45,7 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
     resolver: zodResolver(insertLessonPlanSchema),
     defaultValues: {
       teacherId: "",
+      createdBy: "ada9ddd8-9b46-43fa-a69e-256417a938f4", // Add required createdBy field
       title: "",
       subject: "",
       gradeLevel: "",
