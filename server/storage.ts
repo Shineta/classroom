@@ -818,7 +818,7 @@ export class DatabaseStorage implements IStorage {
     return result.map(row => ({
       locationName: row.locationName,
       walkthroughCount: row.walkthroughCount,
-      avgEngagement: row.avgEngagement || 0,
+      avgEngagement: Number(row.avgEngagement) || 0,
       uniqueTeachers: row.uniqueTeachers,
     }));
   }
@@ -956,7 +956,7 @@ export class DatabaseStorage implements IStorage {
       teacherId: row.teacherId,
       teacherName: row.teacherName,
       totalObservations: row.totalObservations,
-      avgEngagement: row.avgEngagement || 0,
+      avgEngagement: Number(row.avgEngagement) || 0,
       recentTrend: Math.random() > 0.5 ? 'improving' : Math.random() > 0.5 ? 'declining' : 'stable', // Mock trend
       lastObservation: new Date(row.lastObservation).toLocaleDateString(),
     }));
@@ -1014,7 +1014,7 @@ export class DatabaseStorage implements IStorage {
 
     return result.map(row => ({
       date: row.date,
-      avgEngagement: row.avgEngagement || 0,
+      avgEngagement: Number(row.avgEngagement) || 0,
     }));
   }
 

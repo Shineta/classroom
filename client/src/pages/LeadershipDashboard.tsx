@@ -533,7 +533,7 @@ export default function LeadershipDashboard() {
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{teacher.teacherName}</h4>
                           <p className="text-sm text-gray-600">
-                            {teacher.totalObservations} observations • Avg engagement: {(teacher.avgEngagement || 0).toFixed(1)}
+                            {teacher.totalObservations} observations • Avg engagement: {typeof teacher.avgEngagement === 'number' ? teacher.avgEngagement.toFixed(1) : 'N/A'}
                           </p>
                           <p className="text-xs text-gray-500">Last observed: {teacher.lastObservation}</p>
                         </div>
@@ -611,8 +611,8 @@ export default function LeadershipDashboard() {
                           <td className="p-2">{location.walkthroughCount}</td>
                           <td className="p-2">{location.uniqueTeachers}</td>
                           <td className="p-2">
-                            <Badge variant={(location.avgEngagement || 0) > 3 ? 'default' : 'secondary'}>
-                              {(location.avgEngagement || 0).toFixed(1)}
+                            <Badge variant={typeof location.avgEngagement === 'number' && location.avgEngagement > 3 ? 'default' : 'secondary'}>
+                              {typeof location.avgEngagement === 'number' ? location.avgEngagement.toFixed(1) : 'N/A'}
                             </Badge>
                           </td>
                         </tr>
