@@ -134,9 +134,12 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
             if (extractedKey === "objectives" || extractedKey === "activities") {
               // Join with double line breaks for better readability
               processedValue = value.join('\n\n');
-            } else if (extractedKey === "materials" || extractedKey === "standardsCovered") {
+            } else if (extractedKey === "materials") {
               // Join with single line breaks
               processedValue = value.join('\n');
+            } else if (extractedKey === "standardsCovered") {
+              // Keep as array for StandardsSelector component
+              processedValue = value;
             } else if (extractedKey === "lessonTopics") {
               // Join with commas for topics
               processedValue = value.join(', ');

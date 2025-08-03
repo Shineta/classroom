@@ -61,6 +61,9 @@ export default function StandardsSelector({
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
+  // Ensure value is always an array
+  const standardsArray = Array.isArray(value) ? value : [];
+
   const subjectStandards = subject ? COMMON_STANDARDS[subject as keyof typeof COMMON_STANDARDS] || [] : [];
   
   const filteredStandards = subjectStandards.filter(standard =>
@@ -68,18 +71,18 @@ export default function StandardsSelector({
   );
 
   const addStandard = (standard: string) => {
-    if (!value.includes(standard)) {
-      onChange([...value, standard]);
+    if (!standardsArray.includes(standard)) {
+      onChange([...standardsArray, standard]);
     }
   };
 
   const removeStandard = (standardToRemove: string) => {
-    onChange(value.filter(standard => standard !== standardToRemove));
+    onChange(standardsArray.filter(standard => standard !== standardToRemove));
   };
 
   const addCustomStandard = () => {
-    if (customStandard.trim() && !value.includes(customStandard.trim())) {
-      onChange([...value, customStandard.trim()]);
+    if (customStandard.trim() && !standardsArray.includes(customStandard.trim())) {
+      onChange([...standardsArray, customStandard.trim()]);
       setCustomStandard("");
     }
   };
@@ -128,11 +131,11 @@ export default function StandardsSelector({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Selected Standards */}
-        {value.length > 0 && (
+        {standardsArray.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Selected Standards:</h4>
             <div className="flex flex-wrap gap-2">
-              {value.map((standard) => (
+              {standardsArray.map((standard) => (
                 <Badge key={standard} variant="secondary" className="flex items-center gap-1">
                   {standard}
                   <button
@@ -177,7 +180,7 @@ export default function StandardsSelector({
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={value.includes(standard)}
+                      disabled={standardsArray.includes(standard)}
                     >
                       <Plus className="w-3 h-3" />
                     </Button>
@@ -232,7 +235,7 @@ export default function StandardsSelector({
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={value.includes(standard)}
+                      disabled={standardsArray.includes(standard)}
                     >
                       <Plus className="w-3 h-3" />
                     </Button>
@@ -262,7 +265,7 @@ export default function StandardsSelector({
                 />
                 <Button
                   onClick={addCustomStandard}
-                  disabled={!customStandard.trim() || value.includes(customStandard.trim())}
+                  disabled={!customStandard.trim() || standardsArray.includes(customStandard.trim())}
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
