@@ -1075,6 +1075,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       console.log("Lesson plan data with createdBy:", lessonPlanData.createdBy);
       const lessonPlan = await storage.createLessonPlan(lessonPlanData);
+
+      // Send notification to reviewers (coaches and admins) for lesson plan review
+      try {
+        const reviewers = await storage.getUsersByRole(['coach', 'admin']);
+        const creator = await storage.getUser(userId);
+        const teacher = lessonPlan.teacherId ? await storage.getTeacher(lessonPlan.teacherId) : null;
+        
+        if (reviewers.length > 0 && creator) {
+          const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : `${creator.firstName} ${creator.lastName}`;
+          const dateScheduled = lessonPlan.dateScheduled ? 
+            new Date(lessonPlan.dateScheduled).toLocaleDateString() : 'Not scheduled';
+          
+          // Send notifications to all reviewers
+          for (const reviewer of reviewers) {
+            if (reviewer.email) {
+              await emailService.sendLessonPlanReviewNotification(reviewer.email, {
+                reviewerName: `${reviewer.firstName} ${reviewer.lastName}`,
+                teacherName: teacherName,
+                lessonTitle: lessonPlan.title,
+                subject: lessonPlan.subject,
+                gradeLevel: lessonPlan.gradeLevel || 'Not specified',
+                dateScheduled: dateScheduled,
+                reviewUrl: `${req.protocol}://${req.get('host')}/lesson-plan/${lessonPlan.id}`,
+              });
+            }
+          }
+          console.log(`Sent lesson plan review notifications to ${reviewers.length} reviewers`);
+        }
+      } catch (notificationError) {
+        console.error("Failed to send lesson plan review notifications:", notificationError);
+        // Don't fail the entire request if notifications fail
+      }
+
       res.status(201).json(lessonPlan);
     } catch (error) {
       console.error("Error creating lesson plan:", error);
