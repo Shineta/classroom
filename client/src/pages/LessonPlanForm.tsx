@@ -79,11 +79,27 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
 
   const saveMutation = useMutation({
     mutationFn: async (data: InsertLessonPlan) => {
+      console.log("=== MUTATION DEBUG START ===");
+      console.log("Mutation function called with data:", data);
+      
       const method = isEditing ? "PATCH" : "POST";
       const url = isEditing ? `/api/lesson-plans/${lessonPlanId}` : "/api/lesson-plans";
-      return await apiRequest(method, url, data);
+      
+      console.log("Making API request:", { method, url, data });
+      
+      try {
+        const result = await apiRequest(method, url, data);
+        console.log("API request successful, result:", result);
+        return result;
+      } catch (error) {
+        console.error("API request failed:", error);
+        throw error;
+      }
     },
     onSuccess: (result) => {
+      console.log("=== MUTATION SUCCESS ===");
+      console.log("Mutation successful with result:", result);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans"] });
       
       if (!isEditing) {
@@ -91,6 +107,7 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
           title: "Lesson Plan Created",
           description: "Your lesson plan has been saved successfully.",
         });
+        console.log("Navigating to home page...");
         setLocation("/");
       } else {
         toast({
@@ -100,6 +117,10 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
       }
     },
     onError: (error) => {
+      console.error("=== MUTATION ERROR ===");
+      console.error("Mutation error:", error);
+      console.error("Error message:", error.message);
+      
       toast({
         title: "Error",
         description: error.message || "Failed to save lesson plan",
@@ -177,6 +198,14 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
   };
 
   const onSubmit = (data: any) => {
+    console.log("=== FORM SUBMISSION DEBUG START ===");
+    console.log("1. Raw form data received:", data);
+    console.log("2. User object:", user);
+    console.log("3. Teachers array:", teachers);
+    console.log("4. Form validation errors:", form.formState.errors);
+    console.log("5. Form is valid:", form.formState.isValid);
+    console.log("6. Form is submitting:", form.formState.isSubmitting);
+    
     // Add user ID and teacher ID
     const processedData = {
       ...data,
@@ -185,8 +214,17 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
       dateScheduled: data.dateScheduled ? new Date(data.dateScheduled) : null,
     };
     
-    console.log("Submitting lesson plan data:", processedData);
-    saveMutation.mutate(processedData);
+    console.log("7. Processed data to submit:", processedData);
+    console.log("8. About to call saveMutation.mutate...");
+    
+    try {
+      saveMutation.mutate(processedData);
+      console.log("9. saveMutation.mutate called successfully");
+    } catch (error) {
+      console.error("10. Error calling saveMutation.mutate:", error);
+    }
+    
+    console.log("=== FORM SUBMISSION DEBUG END ===");
   };
 
   if (isLoading) {
@@ -619,6 +657,18 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
                     type="submit"
                     disabled={saveMutation.isPending}
                     className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                    onClick={(e) => {
+                      console.log("=== BUTTON CLICK DEBUG ===");
+                      console.log("Button clicked, event:", e);
+                      console.log("Button type:", e.currentTarget.type);
+                      console.log("Form element:", e.currentTarget.form);
+                      console.log("saveMutation.isPending:", saveMutation.isPending);
+                      console.log("Form state:", {
+                        isValid: form.formState.isValid,
+                        isSubmitting: form.formState.isSubmitting,
+                        errors: form.formState.errors
+                      });
+                    }}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {saveMutation.isPending ? "Saving..." : isEditing ? "Update Plan" : "Create Plan"}
