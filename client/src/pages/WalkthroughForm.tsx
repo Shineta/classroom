@@ -896,7 +896,14 @@ export default function WalkthroughForm() {
                             </div>
                           ) : publicLessonPlans && publicLessonPlans.length > 0 ? (
                             <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-3">
-                              {publicLessonPlans.map((plan) => (
+                              {publicLessonPlans.map((plan) => {
+                                console.log("Lesson plan data:", { 
+                                  id: plan.id, 
+                                  title: plan.title, 
+                                  dateScheduled: plan.dateScheduled, 
+                                  teacher: plan.teacher 
+                                });
+                                return (
                                 <div
                                   key={plan.id}
                                   onClick={() => handleLessonPlanSelect(plan)}
@@ -924,7 +931,11 @@ export default function WalkthroughForm() {
                                         {plan.dateScheduled && (
                                           <div className="flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
-                                            <span>Scheduled: {new Date(plan.dateScheduled).toLocaleDateString()}</span>
+                                            <span>Scheduled: {new Date(plan.dateScheduled).toLocaleDateString('en-US', { 
+                                              weekday: 'short', 
+                                              month: 'short', 
+                                              day: 'numeric' 
+                                            })}</span>
                                           </div>
                                         )}
                                       </div>
@@ -942,7 +953,8 @@ export default function WalkthroughForm() {
                                     )}
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : (
                             <div className="text-center py-6 text-gray-500">
