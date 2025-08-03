@@ -19,7 +19,7 @@ import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -29,6 +29,9 @@ function Router() {
     );
   }
 
+  // Get user role for role-based routing
+  const userRole = (user as any)?.role;
+
   return (
     <Switch>
       {!isAuthenticated ? (
@@ -36,7 +39,18 @@ function Router() {
           <Route path="/auth" component={AuthPage} />
           <Route path="/" component={AuthPage} />
         </>
+      ) : userRole === "teacher" ? (
+        // Teacher-only routes - no walkthrough/observation access
+        <>
+          <Route path="/" component={TeacherDashboard} />
+          <Route path="/teacher/dashboard" component={TeacherDashboard} />
+          <Route path="/lesson-plan/new" component={() => <LessonPlanForm lessonPlanId="new" />} />
+          <Route path="/lesson-plan/:id/edit" component={({ params }) => <LessonPlanForm lessonPlanId={params.id} />} />
+          {/* Redirect any other routes to teacher dashboard */}
+          <Route component={() => <TeacherDashboard />} />
+        </>
       ) : (
+        // All other roles (observer, admin, coach, leadership) have full access
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/walkthrough/new" component={WalkthroughForm} />
