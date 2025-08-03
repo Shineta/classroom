@@ -108,6 +108,25 @@ export default function TeacherDashboard() {
     plan.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Filter for different tabs
+  const getFilteredPlansForTab = (tab: string) => {
+    const now = new Date();
+    switch (tab) {
+      case "recent":
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return filteredPlans.filter(plan => 
+          new Date(plan.updatedAt) >= weekAgo
+        );
+      case "upcoming":
+        return filteredPlans.filter(plan => 
+          plan.dateScheduled && new Date(plan.dateScheduled) > now
+        );
+      default:
+        return filteredPlans;
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "draft": return "bg-yellow-100 text-yellow-800";
@@ -262,7 +281,7 @@ export default function TeacherDashboard() {
                       <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-32"></div>
                     ))}
                   </div>
-                ) : filteredPlans.length === 0 ? (
+                ) : getFilteredPlansForTab("plans").length === 0 ? (
                   <div className="text-center py-12">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No lesson plans yet</h3>
@@ -278,7 +297,7 @@ export default function TeacherDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {filteredPlans.map((plan: LessonPlanWithDetails) => (
+                    {getFilteredPlansForTab("plans").map((plan: LessonPlanWithDetails) => (
                       <Card key={plan.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between">
@@ -374,15 +393,178 @@ export default function TeacherDashboard() {
               </TabsContent>
 
               <TabsContent value="recent" className="mt-6">
-                <div className="text-center py-8 text-gray-500">
-                  Recently modified lesson plans will appear here
-                </div>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-32"></div>
+                    ))}
+                  </div>
+                ) : getFilteredPlansForTab("recent").length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p>No recently modified lesson plans</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {getFilteredPlansForTab("recent").map((plan: LessonPlanWithDetails) => (
+                      <Card key={plan.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-900">{plan.title}</h3>
+                                <Badge className={getStatusColor(plan.status || "draft")}>{plan.status}</Badge>
+                                {plan.isPublic && (
+                                  <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    Public
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <BookOpen className="w-4 h-4" />
+                                  {plan.subject}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Users className="w-4 h-4" />
+                                  {plan.gradeLevel}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  {plan.duration} min
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Calendar className="w-4 h-4" />
+                                  Updated {format(new Date(plan.updatedAt), "MMM d")}
+                                </div>
+                              </div>
+
+                              {plan.objective && (
+                                <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                                  <strong>Objective:</strong> {plan.objective}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 ml-4">
+                              <Link href={`/lesson-plan/${plan.id}`}>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View
+                                </Button>
+                              </Link>
+                              <Link href={`/lesson-plan/${plan.id}/edit`}>
+                                <Button variant="outline" size="sm">
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="upcoming" className="mt-6">
-                <div className="text-center py-8 text-gray-500">
-                  Upcoming scheduled lessons will appear here
-                </div>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-32"></div>
+                    ))}
+                  </div>
+                ) : getFilteredPlansForTab("upcoming").length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p>No upcoming scheduled lessons</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Add a scheduled date to your lesson plans to see them here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {getFilteredPlansForTab("upcoming").map((plan: LessonPlanWithDetails) => (
+                      <Card key={plan.id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-900">{plan.title}</h3>
+                                <Badge className={getStatusColor(plan.status || "draft")}>{plan.status}</Badge>
+                                {plan.isPublic && (
+                                  <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    Public
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <BookOpen className="w-4 h-4" />
+                                  {plan.subject}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Users className="w-4 h-4" />
+                                  {plan.gradeLevel}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  {plan.duration} min
+                                </div>
+                                {plan.dateScheduled && (
+                                  <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
+                                    <Calendar className="w-4 h-4" />
+                                    {format(new Date(plan.dateScheduled), "MMM d, h:mm a")}
+                                  </div>
+                                )}
+                              </div>
+
+                              {plan.objective && (
+                                <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                                  <strong>Objective:</strong> {plan.objective}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 ml-4">
+                              <Link href={`/lesson-plan/${plan.id}`}>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View
+                                </Button>
+                              </Link>
+                              <Link href={`/lesson-plan/${plan.id}/edit`}>
+                                <Button variant="outline" size="sm">
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </Link>
+                              
+                              {/* Weekly Submission Button */}
+                              {plan.status === 'finalized' && (
+                                <Button 
+                                  size="sm"
+                                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                                  onClick={() => submitLessonPlanMutation.mutate({ planId: plan.id, weekNumber: currentWeek })}
+                                  disabled={submitLessonPlanMutation.isPending}
+                                  title={`Submit for Week ${currentWeek} (Due Fridays)`}
+                                >
+                                  <Send className="w-4 h-4 mr-1" />
+                                  Submit Week {currentWeek}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
