@@ -11,6 +11,8 @@ interface ExtractedLessonData {
   lessonTopics?: string;
   standardsCovered?: string[];
   studentCount?: number;
+  assessment?: string;
+  differentiation?: string;
 }
 
 // Enhanced pattern matching for comprehensive lesson plan extraction
@@ -25,6 +27,8 @@ const LESSON_PATTERNS = {
   topics: /(?:lesson\s+topics?|topics?|key\s+concepts?|content)\s*:?\s*((?:.|\n)*?)(?=\n\s*(?:[A-Z][^:]*:|$))/i,
   standards: /(?:standards?\s+alignment?|standards?|ap\s+computer\s+science|csta|common\s+core)\s*:?\s*((?:.|\n)*?)(?=\n\s*(?:[A-Z][^:]*:|$))/i,
   studentCount: /(?:estimated\s+student\s+count|student\s+count|class\s+size|enrollment)\s*:?\s*(.+?)(?:\n|$)/i,
+  assessment: /(?:assessment\s+methods?|assessment|evaluation|how\s+will\s+you\s+assess)\s*:?\s*((?:.|\n)*?)(?=\n\s*(?:[A-Z][^:]*:|$))/i,
+  differentiation: /(?:differentiation\s+strategies?|differentiation|accommodations?|how\s+will\s+you\s+accommodate)\s*:?\s*((?:.|\n)*?)(?=\n\s*(?:[A-Z][^:]*:|$))/i,
 };
 
 function extractWithPatterns(text: string): Partial<ExtractedLessonData> {
@@ -113,6 +117,18 @@ function extractWithPatterns(text: string): Partial<ExtractedLessonData> {
     const countStr = studentCountMatch[1].trim();
     const count = parseInt(countStr.match(/\d+/)?.[0] || "25");
     extracted.studentCount = count;
+  }
+  
+  // Extract assessment methods
+  const assessmentMatch = text.match(LESSON_PATTERNS.assessment);
+  if (assessmentMatch) {
+    extracted.assessment = assessmentMatch[1].trim().replace(/\s+/g, ' ');
+  }
+  
+  // Extract differentiation strategies  
+  const differentiationMatch = text.match(LESSON_PATTERNS.differentiation);
+  if (differentiationMatch) {
+    extracted.differentiation = differentiationMatch[1].trim().replace(/\s+/g, ' ');
   }
   
   return extracted;

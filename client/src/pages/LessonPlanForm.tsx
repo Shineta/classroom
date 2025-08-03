@@ -114,12 +114,14 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
       subject: "subject", 
       gradeLevel: "gradeLevel",
       duration: "duration",
-      objectives: "objectives",
+      objectives: "objective",
       activities: "activities", 
       materials: "materials",
-      lessonTopics: "lessonTopics",
+      lessonTopics: "topics",
       standardsCovered: "standardsCovered",
-      studentCount: "studentCount"
+      studentCount: "estimatedStudentCount",
+      assessment: "assessment",
+      differentiation: "differentiation"
     };
     
     Object.entries(fieldMappings).forEach(([extractedKey, formKey]) => {
@@ -131,7 +133,7 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
           
           // Convert arrays to properly formatted strings
           if (Array.isArray(value) && value.length > 0) {
-            if (extractedKey === "objectives" || extractedKey === "activities") {
+            if (extractedKey === "objectives" || extractedKey === "activities" || extractedKey === "assessment" || extractedKey === "differentiation") {
               // Join with double line breaks for better readability
               processedValue = value.join('\n\n');
             } else if (extractedKey === "materials") {

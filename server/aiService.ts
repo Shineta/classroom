@@ -13,6 +13,8 @@ interface ExtractedLessonData {
   lessonTopics?: string;
   standardsCovered?: string[];
   studentCount?: number;
+  assessment?: string;
+  differentiation?: string;
 }
 
 export interface WalkthroughAnalysis {
@@ -173,6 +175,8 @@ Look for these fields and extract comprehensive information:
 - lessonTopics: Key topics and concepts covered (look for "Topics", "Lesson Topics", "Key Concepts", "Content")
 - standardsCovered: Educational standards referenced (look for "Standards", "Standards Alignment", "AP Computer Science", "CSTA", "Common Core", etc.)
 - studentCount: Estimated class size (look for "Student Count", "Class Size", "Enrollment", etc.)
+- assessment: How student understanding will be assessed (look for "Assessment Methods", "Assessment", "Evaluation", "How will you assess")
+- differentiation: Strategies for different learning needs (look for "Differentiation Strategies", "Differentiation", "Accommodations", "How will you accommodate")
 
 Text to analyze:
 ${processedText}
@@ -188,7 +192,9 @@ Return only valid JSON in this format:
   "materials": "...",
   "lessonTopics": "...",
   "standardsCovered": ["..."],
-  "studentCount": 25
+  "studentCount": 25,
+  "assessment": "...",
+  "differentiation": "..."
 }`;
 
     try {
@@ -225,6 +231,8 @@ Return only valid JSON in this format:
         lessonTopics: extractedData.lessonTopics || "",
         standardsCovered: Array.isArray(extractedData.standardsCovered) ? extractedData.standardsCovered : [],
         studentCount: Number(extractedData.studentCount) || 25,
+        assessment: extractedData.assessment || "",
+        differentiation: extractedData.differentiation || "",
       };
 
       return cleanedData;
