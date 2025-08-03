@@ -81,32 +81,74 @@ export default function LeadershipDashboard() {
 
   // Organization-wide overview data
   const { data: overviewStats, isLoading: overviewLoading } = useQuery<OverviewStats>({
-    queryKey: ["/api/leadership/overview", { location: selectedLocation, dateRange }],
+    queryKey: ["/api/leadership/overview", "location", selectedLocation, "dateRange", dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/leadership/overview?location=${selectedLocation}&dateRange=${dateRange}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return await res.json();
+    },
   });
 
   // Location-based analytics
   const { data: locationStats, isLoading: locationLoading } = useQuery<LocationStats[]>({
-    queryKey: ["/api/leadership/locations", { dateRange }],
+    queryKey: ["/api/leadership/locations", "dateRange", dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/leadership/locations?dateRange=${dateRange}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return await res.json();
+    },
   });
 
   // Subject distribution across organization
   const { data: subjectDistribution, isLoading: subjectLoading } = useQuery<SubjectAnalytics[]>({
-    queryKey: ["/api/leadership/subjects", { location: selectedLocation, dateRange }],
+    queryKey: ["/api/leadership/subjects", "location", selectedLocation, "dateRange", dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/leadership/subjects?location=${selectedLocation}&dateRange=${dateRange}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return await res.json();
+    },
   });
 
   // Standards tracking data
   const { data: standardsData, isLoading: standardsLoading } = useQuery<StandardsTracking[]>({
-    queryKey: ["/api/leadership/standards", { location: selectedLocation, dateRange }],
+    queryKey: ["/api/leadership/standards", "location", selectedLocation, "dateRange", dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/leadership/standards?location=${selectedLocation}&dateRange=${dateRange}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return await res.json();
+    },
   });
 
   // Teacher performance overview
   const { data: teacherPerformance, isLoading: teacherLoading } = useQuery<TeacherPerformance[]>({
-    queryKey: ["/api/leadership/teachers", { location: selectedLocation, dateRange }],
+    queryKey: ["/api/leadership/teachers", "location", selectedLocation, "dateRange", dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/leadership/teachers?location=${selectedLocation}&dateRange=${dateRange}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return await res.json();
+    },
   });
 
   // Engagement trends over time
   const { data: engagementTrends, isLoading: trendsLoading } = useQuery({
-    queryKey: ["/api/leadership/engagement-trends", { location: selectedLocation, dateRange }],
+    queryKey: ["/api/leadership/engagement-trends", "location", selectedLocation, "dateRange", dateRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/leadership/engagement-trends?location=${selectedLocation}&dateRange=${dateRange}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return await res.json();
+    },
   });
 
   const { data: locations } = useQuery({
@@ -171,15 +213,14 @@ export default function LeadershipDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/">
-                <Button variant="outline" className="border-white text-white hover:bg-white hover:text-purple-700">
+                <Button variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-purple-700 bg-transparent">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Main Dashboard
                 </Button>
               </Link>
               <Button 
                 onClick={exportData}
-                variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-purple-700"
+                className="bg-white text-purple-700 hover:bg-purple-50 font-medium"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export Report
