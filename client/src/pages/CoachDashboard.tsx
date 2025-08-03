@@ -33,10 +33,7 @@ export default function CoachDashboard() {
     queryKey: ['/api/lesson-plans/weekly-submissions'],
   });
 
-  // Debug logging for weekly submissions
-  console.log("Weekly submissions data:", weeklySubmissions);
-  console.log("Weekly submissions length:", weeklySubmissions?.length);
-  console.log("Submissions loading:", submissionsLoading);
+
 
   // Start review mutation
   const startReviewMutation = useMutation({

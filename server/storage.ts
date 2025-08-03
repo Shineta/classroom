@@ -596,10 +596,12 @@ export class DatabaseStorage implements IStorage {
         observerName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
         walkthroughCount: sql<number>`COUNT(${walkthroughs.id})`,
         avgRating: sql<number>`AVG(CASE 
-          WHEN ${walkthroughs.engagementLevel} = 'low' THEN 1
-          WHEN ${walkthroughs.engagementLevel} = 'medium' THEN 2
-          WHEN ${walkthroughs.engagementLevel} = 'high' THEN 3
-          ELSE 2
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
         END)`,
         subjects: sql<string[]>`ARRAY_AGG(DISTINCT ${walkthroughs.subject})`,
       })
@@ -622,10 +624,12 @@ export class DatabaseStorage implements IStorage {
       .select({
         date: sql<string>`DATE(${walkthroughs.dateTime})`,
         avgEngagement: sql<number>`AVG(CASE 
-          WHEN ${walkthroughs.engagementLevel} = 'low' THEN 1
-          WHEN ${walkthroughs.engagementLevel} = 'medium' THEN 2
-          WHEN ${walkthroughs.engagementLevel} = 'high' THEN 3
-          ELSE 2
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
         END)`,
       })
       .from(walkthroughs)
@@ -648,10 +652,12 @@ export class DatabaseStorage implements IStorage {
         subject: walkthroughs.subject,
         count: sql<number>`COUNT(*)`,
         avgRating: sql<number>`AVG(CASE 
-          WHEN ${walkthroughs.engagementLevel} = 'low' THEN 1
-          WHEN ${walkthroughs.engagementLevel} = 'medium' THEN 2
-          WHEN ${walkthroughs.engagementLevel} = 'high' THEN 3
-          ELSE 2
+          WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+          WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+          WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+          WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+          WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+          ELSE 3
         END)`,
       })
       .from(walkthroughs)
@@ -694,10 +700,12 @@ export class DatabaseStorage implements IStorage {
 
     const [avgResult] = await db
       .select({ avg: sql<number>`AVG(CASE 
-        WHEN ${walkthroughs.engagementLevel} = 'low' THEN 1
-        WHEN ${walkthroughs.engagementLevel} = 'medium' THEN 2
-        WHEN ${walkthroughs.engagementLevel} = 'high' THEN 3
-        ELSE 2
+        WHEN ${walkthroughs.engagementLevel} = '1' THEN 1
+        WHEN ${walkthroughs.engagementLevel} = '2' THEN 2
+        WHEN ${walkthroughs.engagementLevel} = '3' THEN 3
+        WHEN ${walkthroughs.engagementLevel} = '4' THEN 4
+        WHEN ${walkthroughs.engagementLevel} = '5' THEN 5
+        ELSE 3
       END)` })
       .from(walkthroughs)
       .where(sql`${walkthroughs.engagementLevel} IS NOT NULL`);
