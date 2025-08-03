@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("observer"), // observer, admin, coach, leadership
+  role: varchar("role").default("observer"), // observer, admin, coach, leadership, teacher
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

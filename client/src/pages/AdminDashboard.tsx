@@ -488,6 +488,7 @@ export default function AdminDashboard() {
                                 <SelectItem value="coach">Instructional Coach</SelectItem>
                                 <SelectItem value="leadership">Leadership</SelectItem>
                                 <SelectItem value="admin">Administrator</SelectItem>
+                                <SelectItem value="teacher">Teacher</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -526,6 +527,7 @@ export default function AdminDashboard() {
                       <SelectItem value="coach">Coach</SelectItem>
                       <SelectItem value="leadership">Leadership</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="teacher">Teacher</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
