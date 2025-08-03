@@ -81,32 +81,32 @@ export default function LeadershipDashboard() {
 
   // Organization-wide overview data
   const { data: overviewStats, isLoading: overviewLoading } = useQuery<OverviewStats>({
-    queryKey: ["/api/leadership/overview", selectedLocation, dateRange],
+    queryKey: ["/api/leadership/overview", { location: selectedLocation, dateRange }],
   });
 
   // Location-based analytics
   const { data: locationStats, isLoading: locationLoading } = useQuery<LocationStats[]>({
-    queryKey: ["/api/leadership/locations", dateRange],
+    queryKey: ["/api/leadership/locations", { dateRange }],
   });
 
   // Subject distribution across organization
   const { data: subjectDistribution, isLoading: subjectLoading } = useQuery<SubjectAnalytics[]>({
-    queryKey: ["/api/leadership/subjects", selectedLocation, dateRange],
+    queryKey: ["/api/leadership/subjects", { location: selectedLocation, dateRange }],
   });
 
   // Standards tracking data
   const { data: standardsData, isLoading: standardsLoading } = useQuery<StandardsTracking[]>({
-    queryKey: ["/api/leadership/standards", selectedLocation, dateRange],
+    queryKey: ["/api/leadership/standards", { location: selectedLocation, dateRange }],
   });
 
   // Teacher performance overview
   const { data: teacherPerformance, isLoading: teacherLoading } = useQuery<TeacherPerformance[]>({
-    queryKey: ["/api/leadership/teachers", selectedLocation, dateRange],
+    queryKey: ["/api/leadership/teachers", { location: selectedLocation, dateRange }],
   });
 
   // Engagement trends over time
   const { data: engagementTrends, isLoading: trendsLoading } = useQuery({
-    queryKey: ["/api/leadership/engagement-trends", selectedLocation, dateRange],
+    queryKey: ["/api/leadership/engagement-trends", { location: selectedLocation, dateRange }],
   });
 
   const { data: locations } = useQuery({
