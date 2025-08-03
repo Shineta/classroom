@@ -138,7 +138,7 @@ export const walkthroughs = pgTable("walkthroughs", {
   lessonTopics: text("lesson_topics"), // Additional content description beyond objective
   
   // Redesigned structured observations
-  evidenceOfLearning: jsonb("evidence_of_learning"), // {checkedItems: string[], otherItem: string, clarification: string}
+  evidenceOfLearning: text("evidence_of_learning"), // {checkedItems: string[], otherItem: string, clarification: string}
   behaviorRoutines: jsonb("behavior_routines"), // {routines: string[], complianceLevel: string, consistencyRating: number, notes: string}
   climate: climateEnum("climate"),
   climateContributors: jsonb("climate_contributors").$type<string[]>().default([]), // Conditional follow-up based on climate
