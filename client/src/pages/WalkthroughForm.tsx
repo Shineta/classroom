@@ -20,6 +20,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft, Save, Check, Clock, Users, Sparkles } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import StarRating from "@/components/StarRating";
+import StandardsSelector from "@/components/StandardsSelector";
+import AIFeedbackSuggestions from "@/components/AIFeedbackSuggestions";
 import type { Teacher, Location, User, WalkthroughWithDetails } from "@shared/schema";
 
 const formSchema = z.object({
@@ -30,6 +32,12 @@ const formSchema = z.object({
   gradeLevel: z.string().optional(),
   lessonObjective: z.string().optional(),
   lessonPlanUrl: z.string().optional(),
+  
+  // Enhanced data model fields
+  standardsCovered: z.array(z.string()).optional(),
+  studentCount: z.number().min(0).optional(),
+  lessonTopics: z.string().optional(),
+  
   evidenceOfLearning: z.string().optional(),
   behaviorRoutines: z.object({
     routines: z.array(z.string()),
@@ -51,6 +59,11 @@ const formSchema = z.object({
   strengths: z.string().optional(),
   areasForGrowth: z.string().optional(),
   additionalComments: z.string().optional(),
+  
+  // Growth tracking fields
+  previousFeedbackAddressed: z.boolean().optional(),
+  growthNotes: z.string().optional(),
+  
   followUpNeeded: z.boolean().optional(),
   assignedReviewer: z.string().optional(),
   followUpDate: z.string().optional(),
@@ -100,7 +113,7 @@ export default function WalkthroughForm() {
 
   const { data: walkthrough, isLoading: walkthroughLoading } = useQuery<WalkthroughWithDetails>({
     queryKey: ["/api/walkthroughs", walkthroughId],
-    enabled: isAuthenticated && isEditing && !!walkthroughId,
+    enabled: isAuthenticated && isEditing && walkthroughId !== "new",
   });
 
   const { data: userSearchResults } = useQuery<User[]>({
@@ -154,8 +167,13 @@ export default function WalkthroughForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       dateTime: new Date().toISOString().slice(0, 16),
+      standardsCovered: [],
+      studentCount: undefined,
+      lessonTopics: "",
       behaviorRoutines: { routines: [], notes: "" },
       effectivenessRatings: {},
+      previousFeedbackAddressed: false,
+      growthNotes: "",
       observerIds: [],
     },
   });
@@ -163,7 +181,7 @@ export default function WalkthroughForm() {
   // Load walkthrough data into form
   useEffect(() => {
     if (walkthrough) {
-      const observers = walkthrough.observers.map(obs => obs.observer);
+      const observers = walkthrough.observers?.map((obs: any) => obs.observer) || [];
       setSelectedObservers(observers);
       
       form.reset({
@@ -174,6 +192,12 @@ export default function WalkthroughForm() {
         gradeLevel: walkthrough.gradeLevel || "",
         lessonObjective: walkthrough.lessonObjective || "",
         lessonPlanUrl: walkthrough.lessonPlanUrl || "",
+        
+        // Enhanced data model fields
+        standardsCovered: (walkthrough as any).standardsCovered || [],
+        studentCount: (walkthrough as any).studentCount || undefined,
+        lessonTopics: (walkthrough as any).lessonTopics || "",
+        
         evidenceOfLearning: walkthrough.evidenceOfLearning || "",
         behaviorRoutines: walkthrough.behaviorRoutines as any || { routines: [], notes: "" },
         climate: walkthrough.climate || undefined,
@@ -185,11 +209,16 @@ export default function WalkthroughForm() {
         strengths: walkthrough.strengths || "",
         areasForGrowth: walkthrough.areasForGrowth || "",
         additionalComments: walkthrough.additionalComments || "",
+        
+        // Growth tracking fields
+        previousFeedbackAddressed: (walkthrough as any).previousFeedbackAddressed || false,
+        growthNotes: (walkthrough as any).growthNotes || "",
+        
         followUpNeeded: walkthrough.followUpNeeded || false,
         assignedReviewer: walkthrough.assignedReviewer || "",
         followUpDate: walkthrough.followUpDate ? new Date(walkthrough.followUpDate).toISOString().slice(0, 10) : "",
         priority: walkthrough.priority || undefined,
-        observerIds: observers.map(obs => obs.id),
+        observerIds: observers.map((obs: any) => obs.id),
       });
     }
   }, [walkthrough, form]);
@@ -677,6 +706,31 @@ export default function WalkthroughForm() {
                       </div>
                     </div>
 
+                    <FormField
+                      control={form.control}
+                      name="studentCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Students</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              min="0"
+                              placeholder="e.g., 25"
+                              {...field}
+                              value={field.value || ""}
+                              onChange={(e) => {
+                                const value = e.target.value ? parseInt(e.target.value) : undefined;
+                                field.onChange(value);
+                                handleFieldChange("studentCount", value);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <div className="md:col-span-2">
                       <FormField
                         control={form.control}
@@ -698,6 +752,42 @@ export default function WalkthroughForm() {
                             <FormMessage />
                           </FormItem>
                         )}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <FormField
+                        control={form.control}
+                        name="lessonTopics"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Lesson Topics/Content Areas</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Describe the specific topics, concepts, or content areas covered in this lesson..."
+                                rows={2}
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  handleFieldChange("lessonTopics", e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <StandardsSelector
+                        selectedStandards={form.watch("standardsCovered") || []}
+                        onStandardsChange={(standards) => {
+                          form.setValue("standardsCovered", standards);
+                          handleFieldChange("standardsCovered", standards);
+                        }}
+                        subject={form.watch("subject")}
+                        lessonObjective={form.watch("lessonObjective")}
                       />
                     </div>
 
@@ -993,29 +1083,27 @@ export default function WalkthroughForm() {
                 {/* Feedback & Follow-up Tab */}
                 {currentTab === "feedback" && (
                   <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 mb-1">AI-Powered Feedback Assistant</h4>
-                          <p className="text-sm text-gray-600">Generate intelligent feedback based on your walkthrough observations</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => generateFeedbackMutation.mutate()}
-                          disabled={generateFeedbackMutation.isPending || !isEditing || walkthroughId === "new"}
-                          className="bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800"
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          {generateFeedbackMutation.isPending ? "Generating AI Feedback..." : "Generate AI Feedback"}
-                        </Button>
-                      </div>
-                      {walkthroughId === "new" && (
-                        <p className="text-sm text-orange-600 mt-2">
-                          💡 Save as draft first to enable AI feedback generation
-                        </p>
-                      )}
-                    </div>
+                    <AIFeedbackSuggestions
+                      observationData={{
+                        subject: form.watch("subject") || "",
+                        gradeLevel: form.watch("gradeLevel") || "",
+                        lessonObjective: form.watch("lessonObjective") || "",
+                        engagementLevel: form.watch("engagementLevel") || "3",
+                        climate: form.watch("climate") || "neutral",
+                        evidenceOfLearning: form.watch("evidenceOfLearning") || "",
+                        effectivenessRatings: form.watch("effectivenessRatings") || {},
+                      }}
+                      onApplyFeedback={(feedback) => {
+                        form.setValue("strengths", feedback.strengths);
+                        form.setValue("areasForGrowth", feedback.areasForGrowth);
+                        form.setValue("additionalComments", feedback.additionalComments);
+                        
+                        // Auto-save the changes
+                        handleFieldChange("strengths", feedback.strengths);
+                        handleFieldChange("areasForGrowth", feedback.areasForGrowth);
+                        handleFieldChange("additionalComments", feedback.additionalComments);
+                      }}
+                    />
 
                     <FormField
                       control={form.control}
@@ -1082,6 +1170,57 @@ export default function WalkthroughForm() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Growth Tracking Section */}
+                    <div className="border-t border-gray-200 pt-6">
+                      <h4 className="text-lg font-medium text-gray-900 mb-4">Growth & Development Tracking</h4>
+                      
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="previousFeedbackAddressed"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    field.onChange(checked);
+                                    handleFieldChange("previousFeedbackAddressed", checked);
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>Previous feedback was addressed</FormLabel>
+                                <p className="text-sm text-gray-600">Check if the teacher implemented previous suggestions</p>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="growthNotes"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Growth Notes</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Document progress from previous observations, growth areas, and development trends..."
+                                  rows={3}
+                                  {...field}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    handleFieldChange("growthNotes", e.target.value);
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
 
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex items-center justify-between mb-4">
