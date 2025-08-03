@@ -8,6 +8,16 @@ import { aiService } from "./aiService";
 import { emailService } from "./emailService";
 import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema, insertLessonPlanSchema } from "@shared/schema";
 import { z } from "zod";
+import multer from "multer";
+import { extractLessonPlanData } from "./file-processor";
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -948,6 +958,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting lesson plan:", error);
       res.status(500).json({ message: "Failed to delete lesson plan" });
+    }
+  });
+
+  // File upload and data extraction endpoint
+  app.post("/api/lesson-plans/extract-from-file", isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const extractedData = await extractLessonPlanData(req.file);
+      res.json(extractedData);
+    } catch (error) {
+      console.error("Error extracting lesson plan data:", error);
+      res.status(500).json({ message: "Failed to extract data from file" });
     }
   });
 

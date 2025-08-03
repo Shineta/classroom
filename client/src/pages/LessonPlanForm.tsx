@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { CalendarDays, Save, BookOpen, Users, Target, Settings } from "lucide-react";
 import StandardsSelector from "@/components/StandardsSelector";
+import LessonPlanUploader from "@/components/LessonPlanUploader";
 
 interface LessonPlanFormProps {
   lessonPlanId?: string;
@@ -104,6 +105,20 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
     },
   });
 
+  const handleDataExtracted = (extractedData: any) => {
+    // Auto-populate form fields with extracted data
+    Object.entries(extractedData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        form.setValue(key as keyof InsertLessonPlan, value);
+      }
+    });
+    
+    toast({
+      title: "Data extracted successfully",
+      description: "Form fields have been populated with data from your uploaded file. Please review and edit as needed.",
+    });
+  };
+
   const onSubmit = (data: InsertLessonPlan) => {
     // Convert date string back to Date object
     const processedData = {
@@ -164,6 +179,10 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
 
                   {/* Basic Information Tab */}
                   <TabsContent value="basic" className="space-y-6">
+                    {/* File Upload Section */}
+                    {!isEditing && (
+                      <LessonPlanUploader onDataExtracted={handleDataExtracted} />
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}

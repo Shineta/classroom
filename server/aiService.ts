@@ -141,6 +141,32 @@ Respond in JSON format only.`;
 
     return prompt;
   }
+
+  async extractLessonPlanData(prompt: string): Promise<string> {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert educational assistant that extracts structured information from lesson plans. Always respond with valid JSON containing only the requested fields. If information is not available, omit that field from the response."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+        max_tokens: 1000
+      });
+
+      return response.choices[0].message.content || "{}";
+    } catch (error) {
+      console.error("Error extracting lesson plan data with AI:", error);
+      throw new Error("Failed to extract lesson plan data");
+    }
+  }
 }
 
 export const aiService = new AIService();
