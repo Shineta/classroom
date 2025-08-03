@@ -29,9 +29,14 @@ export default function CoachDashboard() {
   });
 
   // Fetch weekly lesson plan submissions
-  const { data: weeklySubmissions = [], isLoading: submissionsLoading } = useQuery({
+  const { data: weeklySubmissions = [], isLoading: submissionsLoading } = useQuery<any[]>({
     queryKey: ['/api/lesson-plans/weekly-submissions'],
   });
+
+  // Debug logging for weekly submissions
+  console.log("Weekly submissions data:", weeklySubmissions);
+  console.log("Weekly submissions length:", weeklySubmissions?.length);
+  console.log("Submissions loading:", submissionsLoading);
 
   // Start review mutation
   const startReviewMutation = useMutation({
