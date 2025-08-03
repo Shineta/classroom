@@ -6,7 +6,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
 import { aiService } from "./aiService";
 import { emailService } from "./emailService";
-import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema } from "@shared/schema";
+import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema, insertLessonPlanSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -862,6 +862,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating report:", error);
       res.status(500).json({ message: "Failed to generate report" });
+    }
+  });
+
+  // Lesson Plan routes
+  app.get("/api/lesson-plans", isAuthenticated, async (req: any, res) => {
+    try {
+      const filters: any = {};
+      if (req.query.teacherId) filters.teacherId = req.query.teacherId;
+      if (req.query.subject) filters.subject = req.query.subject;
+      if (req.query.status) filters.status = req.query.status;
+      
+      const lessonPlans = await storage.getLessonPlans(filters);
+      res.json(lessonPlans);
+    } catch (error) {
+      console.error("Error fetching lesson plans:", error);
+      res.status(500).json({ message: "Failed to fetch lesson plans" });
+    }
+  });
+
+  app.get("/api/lesson-plans/my-plans", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const lessonPlans = await storage.getLessonPlans({ createdBy: userId });
+      res.json(lessonPlans);
+    } catch (error) {
+      console.error("Error fetching user lesson plans:", error);
+      res.status(500).json({ message: "Failed to fetch lesson plans" });
+    }
+  });
+
+  app.get("/api/lesson-plans/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const stats = await storage.getLessonPlanStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching lesson plan stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.get("/api/lesson-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      const lessonPlan = await storage.getLessonPlan(req.params.id);
+      if (!lessonPlan) {
+        return res.status(404).json({ message: "Lesson plan not found" });
+      }
+      res.json(lessonPlan);
+    } catch (error) {
+      console.error("Error fetching lesson plan:", error);
+      res.status(500).json({ message: "Failed to fetch lesson plan" });
+    }
+  });
+
+  app.post("/api/lesson-plans", isAuthenticated, async (req: any, res) => {
+    try {
+      const lessonPlanData = insertLessonPlanSchema.parse({
+        ...req.body,
+        createdBy: req.user.id,
+      });
+      const lessonPlan = await storage.createLessonPlan(lessonPlanData);
+      res.status(201).json(lessonPlan);
+    } catch (error) {
+      console.error("Error creating lesson plan:", error);
+      res.status(400).json({ message: "Failed to create lesson plan" });
+    }
+  });
+
+  app.patch("/api/lesson-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      const lessonPlanData = insertLessonPlanSchema.partial().parse(req.body);
+      const lessonPlan = await storage.updateLessonPlan(req.params.id, lessonPlanData);
+      res.json(lessonPlan);
+    } catch (error) {
+      console.error("Error updating lesson plan:", error);
+      res.status(400).json({ message: "Failed to update lesson plan" });
+    }
+  });
+
+  app.delete("/api/lesson-plans/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteLessonPlan(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting lesson plan:", error);
+      res.status(500).json({ message: "Failed to delete lesson plan" });
     }
   });
 

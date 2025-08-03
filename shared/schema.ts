@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("observer"), // observer, admin, coach, leadership
+  role: varchar("role").default("observer"), // observer, admin, coach, leadership, teacher
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -62,6 +62,45 @@ export const teachers = pgTable("teachers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Lesson Plans table - for teachers to pre-populate walkthrough data
+export const lessonPlans = pgTable("lesson_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull().references(() => teachers.id),
+  createdBy: varchar("created_by").notNull().references(() => users.id), // User who created this plan
+  
+  // Basic lesson information
+  title: varchar("title").notNull(),
+  subject: varchar("subject").notNull(),
+  gradeLevel: varchar("grade_level"),
+  dateScheduled: timestamp("date_scheduled"),
+  duration: integer("duration"), // minutes
+  
+  // Lesson content
+  objective: text("objective"),
+  topics: text("topics"), // Content areas covered
+  standardsCovered: jsonb("standards_covered").$type<string[]>().default([]),
+  materials: text("materials"),
+  
+  // Class information
+  estimatedStudentCount: integer("estimated_student_count"),
+  classroomNotes: text("classroom_notes"),
+  
+  // Planning details
+  activities: text("activities"),
+  assessment: text("assessment"),
+  differentiation: text("differentiation"),
+  
+  // File attachments
+  attachmentUrls: jsonb("attachment_urls").$type<string[]>().default([]),
+  
+  // Status and workflow
+  status: varchar("status").default("draft"), // draft, finalized, archived
+  isPublic: boolean("is_public").default(false), // Can observers see this for reference?
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Enums for walkthrough data
 export const engagementLevelEnum = pgEnum("engagement_level", ["1", "2", "3", "4", "5"]);
 export const climateEnum = pgEnum("climate", ["warm", "neutral", "tense"]);
@@ -84,6 +123,7 @@ export const walkthroughs = pgTable("walkthroughs", {
   gradeLevel: varchar("grade_level"),
   lessonObjective: text("lesson_objective"),
   lessonPlanUrl: varchar("lesson_plan_url"),
+  lessonPlanId: varchar("lesson_plan_id").references(() => lessonPlans.id), // Link to teacher's lesson plan
   
   // Enhanced data model features
   standardsCovered: jsonb("standards_covered").$type<string[]>().default([]), // Standards/CSP principles tracked
@@ -168,6 +208,19 @@ export const locationsRelations = relations(locations, ({ many }) => ({
 
 export const teachersRelations = relations(teachers, ({ many }) => ({
   walkthroughs: many(walkthroughs),
+  lessonPlans: many(lessonPlans),
+}));
+
+export const lessonPlansRelations = relations(lessonPlans, ({ one, many }) => ({
+  teacher: one(teachers, {
+    fields: [lessonPlans.teacherId],
+    references: [teachers.id],
+  }),
+  creator: one(users, {
+    fields: [lessonPlans.createdBy],
+    references: [users.id],
+  }),
+  walkthroughs: many(walkthroughs),
 }));
 
 export const walkthroughsRelations = relations(walkthroughs, ({ one, many }) => ({
@@ -188,6 +241,10 @@ export const walkthroughsRelations = relations(walkthroughs, ({ one, many }) => 
     fields: [walkthroughs.assignedReviewer],
     references: [users.id],
     relationName: "reviewer",
+  }),
+  lessonPlan: one(lessonPlans, {
+    fields: [walkthroughs.lessonPlanId],
+    references: [lessonPlans.id],
   }),
   observers: many(walkthroughObservers),
   sessions: many(walkthroughSessions),
@@ -243,6 +300,29 @@ export const insertTeacherSchema = createInsertSchema(teachers).pick({
   subjects: true,
 });
 
+export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
+  teacherId: true,
+  title: true,
+  subject: true,
+  gradeLevel: true,
+  dateScheduled: true,
+  duration: true,
+  objective: true,
+  topics: true,
+  standardsCovered: true,
+  materials: true,
+  estimatedStudentCount: true,
+  classroomNotes: true,
+  activities: true,
+  assessment: true,
+  differentiation: true,
+  attachmentUrls: true,
+  status: true,
+  isPublic: true,
+}).extend({
+  dateScheduled: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
+});
+
 export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
   teacherId: true,
   locationId: true,
@@ -251,6 +331,7 @@ export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({
   gradeLevel: true,
   lessonObjective: true,
   lessonPlanUrl: true,
+  lessonPlanId: true,
   evidenceOfLearning: true,
   behaviorRoutines: true,
   climate: true,
@@ -291,16 +372,24 @@ export type InsertLocation = z.infer<typeof insertLocationSchema>;
 export type Location = typeof locations.$inferSelect;
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type Teacher = typeof teachers.$inferSelect;
+export type InsertLessonPlan = z.infer<typeof insertLessonPlanSchema>;
+export type LessonPlan = typeof lessonPlans.$inferSelect;
 export type InsertWalkthrough = z.infer<typeof insertWalkthroughSchema>;
 export type Walkthrough = typeof walkthroughs.$inferSelect;
 export type WalkthroughObserver = typeof walkthroughObservers.$inferSelect;
 export type WalkthroughSession = typeof walkthroughSessions.$inferSelect;
 
 // Extended types for API responses
+export type LessonPlanWithDetails = LessonPlan & {
+  teacher: Teacher;
+  creator: User;
+};
+
 export type WalkthroughWithDetails = Walkthrough & {
   teacher: Teacher;
   location: Location;
   creator: User;
   reviewer?: User;
+  lessonPlan?: LessonPlan;
   observers: (WalkthroughObserver & { observer: User })[];
 };

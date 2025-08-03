@@ -5,6 +5,7 @@ import {
   walkthroughs,
   walkthroughObservers,
   walkthroughSessions,
+  lessonPlans,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -17,6 +18,9 @@ import {
   type WalkthroughObserver,
   type WalkthroughSession,
   type WalkthroughWithDetails,
+  type LessonPlan,
+  type InsertLessonPlan,
+  type LessonPlanWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, ilike, inArray, gte, lte, count, sql } from "drizzle-orm";
@@ -73,6 +77,24 @@ export interface IStorage {
   // Collaboration operations
   updateSession(walkthroughId: string, userId: string): Promise<WalkthroughSession>;
   getActiveSessions(walkthroughId: string): Promise<(WalkthroughSession & { user: User })[]>;
+  
+  // Lesson plan operations
+  createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan>;
+  getLessonPlan(id: string): Promise<LessonPlanWithDetails | undefined>;
+  getLessonPlans(filters?: {
+    teacherId?: string;
+    createdBy?: string;
+    subject?: string;
+    status?: string;
+  }): Promise<LessonPlanWithDetails[]>;
+  updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan>;
+  deleteLessonPlan(id: string): Promise<void>;
+  getLessonPlanStats(createdBy: string): Promise<{
+    total: number;
+    thisWeek: number;
+    finalized: number;
+    avgDuration: number;
+  }>;
   deactivateSession(walkthroughId: string, userId: string): Promise<void>;
   
   // Statistics
@@ -1004,6 +1026,123 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  // Lesson plan operations
+  async createLessonPlan(lessonPlan: InsertLessonPlan): Promise<LessonPlan> {
+    const [plan] = await db.insert(lessonPlans).values(lessonPlan).returning();
+    return plan;
+  }
+
+  async getLessonPlan(id: string): Promise<LessonPlanWithDetails | undefined> {
+    const [plan] = await db.select()
+      .from(lessonPlans)
+      .leftJoin(teachers, eq(lessonPlans.teacherId, teachers.id))
+      .leftJoin(users, eq(lessonPlans.createdBy, users.id))
+      .where(eq(lessonPlans.id, id));
+
+    if (!plan) return undefined;
+
+    return {
+      ...plan.lesson_plans,
+      teacher: plan.teachers!,
+      creator: plan.users!,
+    };
+  }
+
+  async getLessonPlans(filters?: {
+    teacherId?: string;
+    createdBy?: string;
+    subject?: string;
+    status?: string;
+  }): Promise<LessonPlanWithDetails[]> {
+    let query = db.select()
+      .from(lessonPlans)
+      .leftJoin(teachers, eq(lessonPlans.teacherId, teachers.id))
+      .leftJoin(users, eq(lessonPlans.createdBy, users.id))
+      .orderBy(desc(lessonPlans.createdAt));
+
+    const conditions = [];
+    if (filters?.teacherId) {
+      conditions.push(eq(lessonPlans.teacherId, filters.teacherId));
+    }
+    if (filters?.createdBy) {
+      conditions.push(eq(lessonPlans.createdBy, filters.createdBy));
+    }
+    if (filters?.subject) {
+      conditions.push(eq(lessonPlans.subject, filters.subject));
+    }
+    if (filters?.status) {
+      conditions.push(eq(lessonPlans.status, filters.status));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const results = await query.execute();
+
+    return results.map(result => ({
+      ...result.lesson_plans,
+      teacher: result.teachers!,
+      creator: result.users!,
+    }));
+  }
+
+  async updateLessonPlan(id: string, lessonPlan: Partial<InsertLessonPlan>): Promise<LessonPlan> {
+    const [plan] = await db.update(lessonPlans)
+      .set({
+        ...lessonPlan,
+        updatedAt: new Date(),
+      })
+      .where(eq(lessonPlans.id, id))
+      .returning();
+    return plan;
+  }
+
+  async deleteLessonPlan(id: string): Promise<void> {
+    await db.delete(lessonPlans).where(eq(lessonPlans.id, id));
+  }
+
+  async getLessonPlanStats(createdBy: string): Promise<{
+    total: number;
+    thisWeek: number;
+    finalized: number;
+    avgDuration: number;
+  }> {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const [totalResult] = await db.select({ count: count() })
+      .from(lessonPlans)
+      .where(eq(lessonPlans.createdBy, createdBy));
+
+    const [thisWeekResult] = await db.select({ count: count() })
+      .from(lessonPlans)
+      .where(and(
+        eq(lessonPlans.createdBy, createdBy),
+        gte(lessonPlans.createdAt, weekAgo)
+      ));
+
+    const [finalizedResult] = await db.select({ count: count() })
+      .from(lessonPlans)
+      .where(and(
+        eq(lessonPlans.createdBy, createdBy),
+        eq(lessonPlans.status, "finalized")
+      ));
+
+    const [avgDurationResult] = await db.select({ 
+      avg: sql<number>`COALESCE(AVG(duration), 0)::integer`
+    })
+      .from(lessonPlans)
+      .where(eq(lessonPlans.createdBy, createdBy));
+
+    return {
+      total: totalResult.count,
+      thisWeek: thisWeekResult.count,
+      finalized: finalizedResult.count,
+      avgDuration: avgDurationResult.avg,
+    };
   }
 }
 

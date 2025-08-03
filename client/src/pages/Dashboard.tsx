@@ -114,6 +114,14 @@ export default function Dashboard() {
                 </Button>
               </Link>
             )}
+            {user?.role === 'teacher' && (
+              <Link href="/teacher/dashboard">
+                <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Teacher Dashboard
+                </Button>
+              </Link>
+            )}
             <Link href="/walkthrough/new">
               <Button className="bg-primary-600 hover:bg-primary-700">
                 <Plus className="w-4 h-4 mr-2" />
