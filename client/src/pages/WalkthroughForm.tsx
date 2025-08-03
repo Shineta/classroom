@@ -147,6 +147,15 @@ export default function WalkthroughForm() {
     enabled: isAuthenticated && searchQuery.length > 2,
   });
 
+  // Fetch users who can be reviewers (admin, coach, leadership roles)
+  const { data: reviewers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: isAuthenticated,
+    select: (users) => users?.filter(user => 
+      user.role === 'admin' || user.role === 'coach' || user.role === 'leadership'
+    ) || [],
+  });
+
   // Fetch public lesson plans for observers to select from
   const { data: publicLessonPlans, isLoading: lessonPlansLoading } = useQuery<LessonPlanWithDetails[]>({
     queryKey: ["/api/lesson-plans/public"],
@@ -1777,7 +1786,11 @@ export default function WalkthroughForm() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="9c7509e3-1f54-4e1a-ba38-2d91b7dcebfa">Admin User</SelectItem>
+                                    {reviewers?.map((reviewer) => (
+                                      <SelectItem key={reviewer.id} value={reviewer.id}>
+                                        {reviewer.firstName} {reviewer.lastName} ({reviewer.role})
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
