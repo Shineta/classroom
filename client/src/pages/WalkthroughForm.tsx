@@ -115,7 +115,7 @@ export default function WalkthroughForm() {
 
   const { data: walkthrough, isLoading: walkthroughLoading } = useQuery<WalkthroughWithDetails>({
     queryKey: ["/api/walkthroughs", walkthroughId],
-    enabled: isAuthenticated && isEditing && walkthroughId !== "new",
+    enabled: isAuthenticated && !!isEditing && walkthroughId !== "new",
   });
 
   const { data: userSearchResults } = useQuery<User[]>({
@@ -189,7 +189,7 @@ export default function WalkthroughForm() {
   // Load walkthrough data into form
   useEffect(() => {
     if (walkthrough) {
-      const observers = walkthrough.observers?.map((obs: any) => obs.observer) || [];
+      const observers = walkthrough.observers?.map((obs) => obs.observer) || [];
       setSelectedObservers(observers);
       
       form.reset({
@@ -226,7 +226,7 @@ export default function WalkthroughForm() {
         assignedReviewer: walkthrough.assignedReviewer || "",
         followUpDate: walkthrough.followUpDate ? new Date(walkthrough.followUpDate).toISOString().slice(0, 10) : "",
         priority: walkthrough.priority || undefined,
-        observerIds: observers.map((obs: any) => obs.id),
+        observerIds: observers.map((obs) => obs.id),
       });
     }
   }, [walkthrough, form]);
@@ -346,7 +346,7 @@ export default function WalkthroughForm() {
         walkthroughId,
         fieldName,
         fieldValue: value,
-        userId: user?.id || '',
+        userId: user?.id || 'unknown',
       });
     }
   };
@@ -829,8 +829,8 @@ export default function WalkthroughForm() {
 
                     <div className="md:col-span-2">
                       <StandardsSelector
-                        selectedStandards={form.watch("standardsCovered") || []}
-                        onStandardsChange={(standards) => {
+                        value={form.watch("standardsCovered") || []}
+                        onChange={(standards: string[]) => {
                           form.setValue("standardsCovered", standards);
                           handleFieldChange("standardsCovered", standards);
                         }}
@@ -914,8 +914,23 @@ export default function WalkthroughForm() {
                                         <span>{plan.gradeLevel}</span>
                                         <span>{plan.duration} min</span>
                                       </div>
+                                      
+                                      {/* Teacher and Date Information */}
+                                      <div className="flex items-center gap-4 mt-2 text-sm text-blue-600">
+                                        <div className="flex items-center gap-1">
+                                          <Users className="w-3 h-3" />
+                                          <span>By: {plan.teacher ? `${plan.teacher.firstName} ${plan.teacher.lastName}` : 'Unknown Teacher'}</span>
+                                        </div>
+                                        {plan.dateScheduled && (
+                                          <div className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>Scheduled: {new Date(plan.dateScheduled).toLocaleDateString()}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
                                       {plan.objective && (
-                                        <p className="mt-1 text-sm text-gray-700 line-clamp-2">
+                                        <p className="mt-2 text-sm text-gray-700 line-clamp-2">
                                           {plan.objective}
                                         </p>
                                       )}
@@ -1204,7 +1219,7 @@ export default function WalkthroughForm() {
                                 form.setValue("effectivenessRatings", newRatings);
                                 handleFieldChange("effectivenessRatings", newRatings);
                               }}
-                              defaultValue={form.watch("effectivenessRatings")?.[indicator.key as any] as string}
+                              defaultValue={(form.watch("effectivenessRatings") as any)?.[indicator.key] || ""}
                             >
                               <SelectTrigger className="w-40">
                                 <SelectValue />
