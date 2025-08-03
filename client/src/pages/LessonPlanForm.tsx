@@ -108,28 +108,63 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
   const handleDataExtracted = (extractedData: any) => {
     console.log("Extracted data:", extractedData);
     
-    // Auto-populate form fields with extracted data
-    Object.entries(extractedData).forEach(([key, value]) => {
+    // Map extracted data to form fields with proper type conversion
+    const fieldMappings: Record<string, string> = {
+      title: "title",
+      subject: "subject", 
+      gradeLevel: "gradeLevel",
+      duration: "duration",
+      objectives: "objectives",
+      activities: "activities", 
+      materials: "materials",
+      lessonTopics: "lessonTopics",
+      standardsCovered: "standardsCovered",
+      studentCount: "studentCount"
+    };
+    
+    Object.entries(fieldMappings).forEach(([extractedKey, formKey]) => {
+      const value = extractedData[extractedKey];
+      
       if (value !== undefined && value !== null && value !== "" && value !== "Not specified") {
         try {
-          // Handle arrays properly
+          let processedValue = value;
+          
+          // Convert arrays to properly formatted strings
           if (Array.isArray(value) && value.length > 0) {
-            form.setValue(key as keyof InsertLessonPlan, value);
-          } else if (!Array.isArray(value)) {
-            form.setValue(key as keyof InsertLessonPlan, value);
+            if (extractedKey === "objectives" || extractedKey === "activities") {
+              // Join with double line breaks for better readability
+              processedValue = value.join('\n\n');
+            } else if (extractedKey === "materials" || extractedKey === "standardsCovered") {
+              // Join with single line breaks
+              processedValue = value.join('\n');
+            } else if (extractedKey === "lessonTopics") {
+              // Join with commas for topics
+              processedValue = value.join(', ');
+            } else {
+              processedValue = value.join('\n');
+            }
           }
+          
+          form.setValue(formKey as keyof InsertLessonPlan, processedValue);
+          console.log(`Set ${formKey}:`, processedValue);
         } catch (error) {
-          console.warn(`Error setting field ${key}:`, error);
+          console.warn(`Error setting field ${formKey}:`, error);
         }
       }
     });
     
-    // Force form re-render
+    // Force form validation and re-render
     form.trigger();
     
+    const extractedFields = Object.keys(extractedData).filter(key => 
+      extractedData[key] && 
+      extractedData[key] !== "Not specified" && 
+      extractedData[key] !== ""
+    );
+    
     toast({
-      title: "Data extracted successfully",
-      description: `Form fields have been populated with data from your uploaded file. Found: ${Object.keys(extractedData).filter(key => extractedData[key] && extractedData[key] !== "Not specified").join(", ")}`,
+      title: "Lesson plan data extracted!",
+      description: `Successfully populated ${extractedFields.length} fields: ${extractedFields.join(", ")}`,
     });
   };
 
