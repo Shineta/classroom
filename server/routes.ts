@@ -339,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         evidenceOfLearning: walkthrough.evidenceOfLearning || undefined,
         behaviorRoutines: walkthrough.behaviorRoutines as any,
         climate: walkthrough.climate || undefined,
-        climateNotes: walkthrough.climateNotes || undefined,
+        // climateNotes not available in schema
         engagementLevel: walkthrough.engagementLevel || undefined,
         transitions: walkthrough.transitions || undefined,
         transitionComments: walkthrough.transitionComments || undefined,
@@ -471,20 +471,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set review status when follow-up and reviewer are assigned
       if (newFollowUpNeeded && newAssignedReviewer && (!wasFollowUpNeeded || !wasAssignedReviewer)) {
         updateData.reviewStatus = "pending";
-        updateData.notificationSent = false;
       }
       // Clear review status if follow-up is turned off or reviewer is removed
       else if (!newFollowUpNeeded || !newAssignedReviewer) {
         updateData.reviewStatus = "not-required";
-        updateData.notificationSent = false;
       }
 
       const updatedWalkthrough = await storage.updateWalkthrough(req.params.id, updateData);
 
       // Send email notification if reviewer was just assigned
       if (newFollowUpNeeded && newAssignedReviewer && 
-          (!wasFollowUpNeeded || wasAssignedReviewer !== newAssignedReviewer) && 
-          !updatedWalkthrough.notificationSent) {
+          (!wasFollowUpNeeded || wasAssignedReviewer !== newAssignedReviewer)) {
         
         try {
           const reviewer = await storage.getUser(newAssignedReviewer);
@@ -503,7 +500,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             if (emailSent) {
-              await storage.updateWalkthrough(req.params.id, { notificationSent: true });
               console.log(`Review assignment notification sent to ${reviewer.email}`);
             }
           }

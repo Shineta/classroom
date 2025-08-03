@@ -25,6 +25,13 @@ import {
 import { db } from "./db";
 import { eq, desc, and, ilike, inArray, gte, lte, count, sql } from "drizzle-orm";
 
+// Helper function to get week number
+function getWeekNumber(date: Date): number {
+  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+}
+
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
