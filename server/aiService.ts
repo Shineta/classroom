@@ -142,26 +142,79 @@ Respond in JSON format only.`;
     return prompt;
   }
 
-  async extractLessonPlanData(prompt: string): Promise<string> {
+  async extractLessonPlanData(text: string): Promise<ExtractedLessonData> {
+    // Limit input text to prevent token limit issues
+    const processedText = text.length > 50000 ? text.substring(0, 50000) + "\n[Content truncated for processing]" : text;
+    
+    const prompt = `
+You are an expert educational specialist. Extract lesson plan information from the following text and return it as a JSON object.
+
+Look for these fields:
+- title: The lesson title or activity name
+- subject: The subject area (e.g., Computer Science, Math, Science, English)
+- gradeLevel: Target grade level (e.g., "9-12", "High School")
+- duration: Time in minutes (estimate if not specified)
+- objectives: Learning objectives and goals
+- activities: Description of lesson activities
+- materials: Required materials and resources
+- lessonTopics: Key topics and concepts covered
+- standardsCovered: Educational standards referenced (as array)
+- studentCount: Estimated class size (number)
+
+Text to analyze:
+${processedText}
+
+Return only valid JSON in this format:
+{
+  "title": "...",
+  "subject": "...",
+  "gradeLevel": "...",
+  "duration": 45,
+  "objectives": "...",
+  "activities": "...",
+  "materials": "...",
+  "lessonTopics": "...",
+  "standardsCovered": ["..."],
+  "studentCount": 25
+}`;
+
     try {
-      const response = await openai.chat.completions.create({
+      console.log("Sending text to OpenAI for lesson plan extraction...");
+      const response = await this.openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
-            role: "system",
-            content: "You are an expert educational assistant that extracts structured information from lesson plans. Always respond with valid JSON containing only the requested fields. If information is not available, omit that field from the response."
-          },
-          {
             role: "user",
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         response_format: { type: "json_object" },
         temperature: 0.3,
-        max_tokens: 1000
+        max_tokens: 2000,
       });
 
-      return response.choices[0].message.content || "{}";
+      const content = response.choices[0].message.content;
+      if (!content) {
+        throw new Error("No response from OpenAI");
+      }
+
+      const extractedData = JSON.parse(content) as ExtractedLessonData;
+      
+      // Validate and clean the extracted data
+      const cleanedData: ExtractedLessonData = {
+        title: extractedData.title || "Untitled Lesson",
+        subject: extractedData.subject || "General",
+        gradeLevel: extractedData.gradeLevel || "K-12",
+        duration: Number(extractedData.duration) || 45,
+        objectives: extractedData.objectives || "",
+        activities: extractedData.activities || "",
+        materials: extractedData.materials || "",
+        lessonTopics: extractedData.lessonTopics || "",
+        standardsCovered: Array.isArray(extractedData.standardsCovered) ? extractedData.standardsCovered : [],
+        studentCount: Number(extractedData.studentCount) || 25,
+      };
+
+      return cleanedData;
     } catch (error) {
       console.error("Error extracting lesson plan data with AI:", error);
       throw new Error("Failed to extract lesson plan data");

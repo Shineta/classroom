@@ -8,6 +8,20 @@ The platform serves three main user roles: observers (who conduct walkthroughs),
 
 ## Recent Changes (August 2025)
 
+- **Created Comprehensive Lesson Plan Template**: Developed detailed template and guidelines for creating complete lesson plans
+  - Added LESSON_PLAN_TEMPLATE.md with all required fields and examples
+  - Created lessonPlanTemplate.ts with structured interfaces and prompt templates
+  - Provided sample lesson plans for Computer Science, Mathematics, and Science subjects
+  - Included standards alignment examples for AP CS, Common Core, NGSS, and CSTA standards
+  - Added guidance for effective lesson planning and file upload features
+- **Fixed AI Token Limit Issues**: Resolved OpenAI API rate limiting problems in lesson plan extraction
+  - Added text truncation to stay within OpenAI token limits (50k characters max for AI processing)
+  - Enhanced error handling for large documents and improved fallback mechanisms
+  - Fixed aiService method signature and data processing pipeline
+  - Added comprehensive text preprocessing to prevent API failures
+
+## Recent Changes (August 2025)
+
 - **Enhanced Lesson Plan File Upload System**: Improved AI-powered auto-population functionality
   - Fixed file processing for Word documents using mammoth library for proper text extraction
   - Enhanced PDF processing with comprehensive error handling and content analysis

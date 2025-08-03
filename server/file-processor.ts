@@ -45,6 +45,12 @@ export async function extractLessonPlanData(file: Express.Multer.File): Promise<
         textContent = fullText.trim();
         console.log("PDF text extracted successfully, length:", textContent.length);
         
+        // Limit text length to avoid OpenAI token limits (roughly 100k tokens = 400k characters)
+        if (textContent.length > 300000) {
+          console.log("Text too long, truncating to first 300k characters");
+          textContent = textContent.substring(0, 300000) + "\n[Content truncated due to length]";
+        }
+        
         if (!textContent || textContent.trim().length === 0) {
           throw new Error("PDF appears to be empty or unreadable");
         }
