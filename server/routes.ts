@@ -6,6 +6,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
 import { aiService } from "./aiService";
 import { emailService, getCurrentWeekNumber, getFridayDeadline, isSubmissionLate } from "./emailService";
+import { SMSService } from "./smsService";
 import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema, insertLessonPlanSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -1078,7 +1079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send notification to reviewers (coaches and admins) for lesson plan review
       try {
-        const reviewers = await storage.getUsersByRole(['coach', 'admin']);
+        const reviewers = await storage.getUsersByRole('coach');
         const creator = await storage.getUser(userId);
         const teacher = lessonPlan.teacherId ? await storage.getTeacher(lessonPlan.teacherId) : null;
         
@@ -1129,12 +1130,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get weekly lesson plan submissions for coaches
   app.get("/api/lesson-plans/weekly-submissions", isAuthenticated, async (req: any, res) => {
     try {
+      console.log("Weekly submissions request - User:", req.user);
+      console.log("User role:", req.user?.role);
+      
       // Only coaches and admins can view weekly submissions
-      if (!['coach', 'admin'].includes(req.user.role)) {
-        return res.status(403).json({ message: "Access denied" });
+      if (!['coach', 'admin'].includes(req.user?.role)) {
+        console.log("Access denied for role:", req.user?.role);
+        return res.status(403).json({ message: "Access denied - requires coach or admin role" });
       }
 
+      console.log("Fetching lesson plan submissions...");
       const submissions = await storage.getLessonPlanSubmissions();
+      console.log("Found submissions:", submissions.length);
       res.json(submissions);
     } catch (error) {
       console.error("Error fetching weekly submissions:", error);
@@ -1201,6 +1208,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (notificationSent) {
           // Mark as coach notified
           await storage.updateLessonPlan(req.params.id, { coachNotified: true });
+        }
+
+        // Send SMS notification to coaches about the lesson plan submission
+        try {
+          if (coaches.length > 0) {
+            const coach = coaches[0]; // Notify first coach found
+            
+            // For demo purposes, using a default number - in production you'd store coach phone numbers
+            const coachPhoneNumber = process.env.COACH_PHONE_NUMBER || '+1234567890';
+            
+            await SMSService.sendLessonPlanSubmissionNotification({
+              teacherName: `${teacher.firstName} ${teacher.lastName}`,
+              lessonPlanTitle: updatedLessonPlan.title,
+              subject: updatedLessonPlan.subject,
+              gradeLevel: updatedLessonPlan.gradeLevel,
+              isLate,
+              recipientPhone: coachPhoneNumber
+            });
+            
+            console.log(`SMS notification sent to coach about lesson plan submission`);
+          }
+        } catch (smsError) {
+          console.error("Failed to send SMS notification:", smsError);
+          // Don't fail the entire request if SMS fails
         }
       }
 
