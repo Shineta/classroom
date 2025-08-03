@@ -161,7 +161,7 @@ export default function WalkthroughReport() {
               <div className="flex items-center">
                 <Calendar className="w-4 h-4 mr-2 text-gray-500" />
                 <span className="font-medium">Date & Time:</span>
-                <span className="ml-2">{formatDate(walkthrough.dateTime)}</span>
+                <span className="ml-2">{formatDate(walkthrough.dateTime.toString())}</span>
               </div>
             </div>
             <div className="space-y-3">
@@ -205,7 +205,36 @@ export default function WalkthroughReport() {
                 {walkthrough.evidenceOfLearning && (
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Evidence of Learning</h4>
-                    <p className="text-gray-700">{walkthrough.evidenceOfLearning}</p>
+                    <div className="text-gray-700">
+                      {typeof walkthrough.evidenceOfLearning === 'string' ? (
+                        <p>{walkthrough.evidenceOfLearning}</p>
+                      ) : (
+                        <div>
+                          {(walkthrough.evidenceOfLearning as any)?.checkedItems?.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-sm font-medium mb-1">Observed Evidence:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm">
+                                {(walkthrough.evidenceOfLearning as any).checkedItems.map((item: string, index: number) => (
+                                  <li key={index}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {(walkthrough.evidenceOfLearning as any)?.otherItem && (
+                            <div className="mb-2">
+                              <p className="text-sm font-medium mb-1">Other Evidence:</p>
+                              <p className="text-sm">{(walkthrough.evidenceOfLearning as any).otherItem}</p>
+                            </div>
+                          )}
+                          {(walkthrough.evidenceOfLearning as any)?.clarification && (
+                            <div>
+                              <p className="text-sm font-medium mb-1">Additional Notes:</p>
+                              <p className="text-sm">{(walkthrough.evidenceOfLearning as any).clarification}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -257,8 +286,15 @@ export default function WalkthroughReport() {
                      walkthrough.climate === 'neutral' ? '😐 Neutral' : '😟 Tense'}
                   </span>
                 </div>
-                {walkthrough.climateNotes && (
-                  <p className="text-gray-600 text-sm">{walkthrough.climateNotes}</p>
+                {walkthrough.climateContributors && walkthrough.climateContributors.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Contributing Factors:</p>
+                    <ul className="list-disc list-inside space-y-1 text-gray-600 text-sm">
+                      {walkthrough.climateContributors.map((factor, index) => (
+                        <li key={index}>{factor}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             )}
@@ -294,8 +330,8 @@ export default function WalkthroughReport() {
                   <span className="text-sm font-medium text-gray-700 mr-3">Rating:</span>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     walkthrough.transitions === 'smooth' ? 'bg-green-100 text-green-800' :
-                    walkthrough.transitions === 'adequate' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
+                    walkthrough.transitions === 'needs-improvement' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
                   }`}>
                     {walkthrough.transitions.charAt(0).toUpperCase() + walkthrough.transitions.slice(1)}
                   </span>

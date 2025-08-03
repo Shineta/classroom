@@ -430,6 +430,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Don't fail the update if email fails
         }
       }
+
+      // Send teacher notification when observation is completed with follow-up
+      if (updateData.status === "completed" && walkthrough.status !== "completed" && 
+          newFollowUpNeeded && updatedWalkthrough.teacherId) {
+        
+        try {
+          const teacher = await storage.getTeacher(updatedWalkthrough.teacherId);
+          const observer = await storage.getUser(updatedWalkthrough.createdBy);
+          
+          if (teacher && observer && teacher.email) {
+            const reportUrl = `${req.protocol}://${req.get('host')}/walkthrough/${updatedWalkthrough.id}/report`;
+            
+            const teacherEmailSent = await emailService.sendTeacherFollowUpNotification({
+              walkthrough: updatedWalkthrough,
+              teacher,
+              observer,
+              reportUrl
+            });
+            
+            if (teacherEmailSent) {
+              console.log(`Teacher follow-up notification sent to ${teacher.email}`);
+            }
+          }
+        } catch (emailError) {
+          console.error("Error sending teacher follow-up email:", emailError);
+          // Don't fail the update if email fails
+        }
+      }
       
       // Handle observer updates if provided
       if (req.body.observerIds && Array.isArray(req.body.observerIds)) {

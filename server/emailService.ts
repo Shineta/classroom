@@ -210,6 +210,102 @@ View the complete walkthrough report at: ${reportUrl}
   async sendReviewNotification(data: NotificationData): Promise<boolean> {
     return this.sendReviewAssignmentNotification(data);
   }
+  async sendTeacherFollowUpNotification(data: {
+    walkthrough: Walkthrough;
+    teacher: Teacher;
+    observer: User;
+    reportUrl: string;
+  }): Promise<boolean> {
+    if (!this.isEnabled) {
+      console.log("Email service disabled - SENDGRID_API_KEY not configured");
+      return false;
+    }
+
+    if (!data.teacher.email) {
+      console.log("Teacher email not provided - cannot send notification");
+      return false;
+    }
+
+    try {
+      const { walkthrough, teacher, observer, reportUrl } = data;
+      
+      const subject = `Follow-up Required: Your Recent Classroom Observation`;
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Classroom Observation Follow-up</h2>
+          
+          <p>Hello ${teacher.firstName},</p>
+          
+          <p>Your recent classroom observation has been completed and requires follow-up action. Here are the details:</p>
+          
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1e40af; margin-top: 0;">Observation Details</h3>
+            <ul style="list-style: none; padding: 0;">
+              <li><strong>Subject:</strong> ${walkthrough.subject}</li>
+              <li><strong>Grade Level:</strong> ${walkthrough.gradeLevel || 'Not specified'}</li>
+              <li><strong>Date:</strong> ${new Date(walkthrough.dateTime).toLocaleDateString()}</li>
+              <li><strong>Observer:</strong> ${observer.firstName} ${observer.lastName}</li>
+              ${walkthrough.followUpDate ? `<li><strong>Follow-up Due:</strong> ${new Date(walkthrough.followUpDate).toLocaleDateString()}</li>` : ''}
+            </ul>
+          </div>
+          
+          <p>Please review the observation report and feedback. You can access the full report using the link below:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${reportUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              View Observation Report
+            </a>
+          </div>
+          
+          <p style="font-size: 14px; color: #6b7280;">
+            To address the follow-up items, please log into your teacher dashboard in the Classroom Walkthrough Tool.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+          
+          <p style="font-size: 12px; color: #9ca3af;">
+            This is an automated notification from the Classroom Walkthrough Tool. Please do not reply to this email.
+          </p>
+        </div>
+      `;
+
+      const text = `
+Classroom Observation Follow-up
+
+Hello ${teacher.firstName},
+
+Your recent classroom observation has been completed and requires follow-up action.
+
+Observation Details:
+- Subject: ${walkthrough.subject}
+- Grade Level: ${walkthrough.gradeLevel || 'Not specified'}
+- Date: ${new Date(walkthrough.dateTime).toLocaleDateString()}
+- Observer: ${observer.firstName} ${observer.lastName}
+${walkthrough.followUpDate ? `- Follow-up Due: ${new Date(walkthrough.followUpDate).toLocaleDateString()}` : ''}
+
+Please review the observation report and feedback.
+View the full report at: ${reportUrl}
+
+To address the follow-up items, please log into your teacher dashboard in the Classroom Walkthrough Tool.
+      `;
+
+      await mailService.send({
+        to: teacher.email,
+        from: process.env.FROM_EMAIL || 'noreply@classroom-walkthrough.com',
+        subject,
+        text,
+        html,
+      });
+
+      console.log(`Teacher follow-up notification sent to ${teacher.email}`);
+      return true;
+
+    } catch (error) {
+      console.error('Failed to send teacher follow-up notification:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();

@@ -8,6 +8,13 @@ The platform serves three main user roles: observers (who conduct walkthroughs),
 
 ## Recent Changes (August 2025)
 
+- **Implemented Teacher Email Notifications (August 3, 2025)**: Added comprehensive follow-up notification system
+  - Teachers now receive automatic email notifications when their observations are completed with follow-up requirements
+  - Enhanced EmailService with sendTeacherFollowUpNotification method for direct teacher communication
+  - Notifications include observation details, follow-up dates, and direct links to view reports
+  - Updated walkthrough completion workflow to trigger teacher notifications when follow-up is needed
+  - Fixed WalkthroughReport component to properly render new structured observation data (Evidence of Learning, Climate Contributors)
+  - Added proper error handling and fallback display for complex observation data objects
 - **Fixed "Create Plan" Button Functionality (August 3, 2025)**: Completely resolved TypeScript compilation errors preventing lesson plan form submission
   - Fixed authentication integration using proper useAuth hook from /hooks/useAuth.ts
   - Resolved all form validation type errors with proper type casting and null handling
