@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import { CalendarDays, Save, BookOpen, Users, Target, Settings } from "lucide-react";
+import { CalendarDays, Save, BookOpen, Users, Target, Settings, ArrowLeft } from "lucide-react";
 import StandardsSelector from "@/components/StandardsSelector";
 import LessonPlanUploader from "@/components/LessonPlanUploader";
 
@@ -88,7 +88,7 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
           title: "Lesson Plan Created",
           description: "Your lesson plan has been saved successfully.",
         });
-        setLocation(`/lesson-plan/${result.id}`);
+        setLocation("/");
       } else {
         toast({
           title: "Lesson Plan Updated",
@@ -193,16 +193,27 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
       <div className="max-w-4xl mx-auto">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
-            <div className="flex items-center gap-3">
-              <BookOpen className="w-8 h-8" />
-              <div>
-                <CardTitle className="text-2xl font-bold">
-                  {isEditing ? "Edit Lesson Plan" : "Create New Lesson Plan"}
-                </CardTitle>
-                <CardDescription className="text-green-100">
-                  Plan your lesson to enable automatic walkthrough data population
-                </CardDescription>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-8 h-8" />
+                <div>
+                  <CardTitle className="text-2xl font-bold">
+                    {isEditing ? "Edit Lesson Plan" : "Create New Lesson Plan"}
+                  </CardTitle>
+                  <CardDescription className="text-green-100">
+                    Plan your lesson to enable automatic walkthrough data population
+                  </CardDescription>
+                </div>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation("/")}
+                className="text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
             </div>
           </CardHeader>
 
@@ -591,7 +602,7 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setLocation("/teacher-dashboard")}
+                    onClick={() => setLocation("/")}
                   >
                     Cancel
                   </Button>

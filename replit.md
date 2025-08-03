@@ -24,6 +24,8 @@ The platform serves three main user roles: observers (who conduct walkthroughs),
   - Fixed form data mapping to properly convert arrays to formatted strings
   - Added robust handling for learning objectives, standards, activities, and materials
   - Improved user feedback with detailed extraction success messages
+  - Fixed StandardsSelector component to handle both string and array inputs safely
+  - Added proper navigation with "Back to Dashboard" button and cancel functionality
 
 ## Recent Changes (August 2025)
 
