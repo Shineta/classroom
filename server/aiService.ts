@@ -164,7 +164,8 @@ Respond in JSON format only.`;
     const prompt = `
 You are an expert educational specialist. Extract lesson plan information from the following text and return it as a JSON object.
 
-Look for these fields and extract comprehensive information:
+Look for these fields and extract comprehensive information. When information is not explicitly stated, generate appropriate educational content based on the lesson context:
+
 - title: The lesson title or activity name (look for "Lesson Title", "Title", or similar headings)
 - subject: The subject area (look for "Subject Area", "Subject", etc.)
 - gradeLevel: Target grade level (look for "Grade Level", "Target Grade", etc.)
@@ -175,8 +176,8 @@ Look for these fields and extract comprehensive information:
 - lessonTopics: Key topics and concepts covered (look for "Topics", "Lesson Topics", "Key Concepts", "Content")
 - standardsCovered: Educational standards referenced (look for "Standards", "Standards Alignment", "AP Computer Science", "CSTA", "Common Core", etc.)
 - studentCount: Estimated class size (look for "Student Count", "Class Size", "Enrollment", etc.)
-- assessment: How student understanding will be assessed (look for "Assessment Methods", "Assessment", "Evaluation", "How will you assess")
-- differentiation: Strategies for different learning needs (look for "Differentiation Strategies", "Differentiation", "Accommodations", "How will you accommodate")
+- assessment: How student understanding will be assessed (look for "Assessment Methods", "Assessment", "Evaluation", "How will you assess"). If not explicitly mentioned, generate appropriate assessment strategies based on the lesson objectives and activities.
+- differentiation: Strategies for different learning needs (look for "Differentiation Strategies", "Differentiation", "Accommodations", "How will you accommodate"). If not explicitly mentioned, generate appropriate differentiation strategies based on the lesson content, grade level, and subject area.
 
 Text to analyze:
 ${processedText}
@@ -235,10 +236,50 @@ Return only valid JSON in this format:
         differentiation: extractedData.differentiation || "",
       };
 
+      // Generate intelligent defaults for missing educational content
+      if (!cleanedData.assessment || cleanedData.assessment.includes("not mentioned") || cleanedData.assessment.includes("Not explicitly")) {
+        cleanedData.assessment = this.generateAssessmentStrategies(cleanedData);
+      }
+
+      if (!cleanedData.differentiation || cleanedData.differentiation.includes("not mentioned") || cleanedData.differentiation.includes("Not explicitly")) {
+        cleanedData.differentiation = this.generateDifferentiationStrategies(cleanedData);
+      }
+
       return cleanedData;
     } catch (error) {
       console.error("Error extracting lesson plan data with AI:", error);
       throw new Error("Failed to extract lesson plan data");
+    }
+  }
+
+  private generateAssessmentStrategies(lessonData: ExtractedLessonData): string {
+    const subject = lessonData.subject?.toLowerCase() || "";
+    const gradeLevel = lessonData.gradeLevel || "";
+    const objectives = lessonData.objectives || "";
+
+    if (subject.includes("computer science") || subject.includes("programming")) {
+      return "Students will be assessed through code review, debugging exercises, practical programming tasks, and peer evaluation of their solutions. Assessment includes both formative checks during guided practice and summative evaluation of independent work.";
+    } else if (subject.includes("math")) {
+      return "Students will be assessed through problem-solving activities, mathematical reasoning explanations, exit tickets with key problems, and observation during collaborative work.";
+    } else if (subject.includes("science")) {
+      return "Students will be assessed through lab observations, scientific explanations, data analysis, and demonstration of understanding through practical applications.";
+    } else {
+      return "Students will be assessed through formative questioning, exit tickets, peer discussions, written reflections, and demonstration of key concepts through practical application.";
+    }
+  }
+
+  private generateDifferentiationStrategies(lessonData: ExtractedLessonData): string {
+    const subject = lessonData.subject?.toLowerCase() || "";
+    const gradeLevel = lessonData.gradeLevel || "";
+    
+    if (subject.includes("computer science") || subject.includes("programming")) {
+      return "Provide coding scaffolds for struggling students, offer extension challenges for advanced learners, use pair programming for collaborative support, provide visual aids and step-by-step guides, and allow flexible pacing during independent practice.";
+    } else if (subject.includes("math")) {
+      return "Offer manipulatives and visual models for concrete learners, provide worked examples with varying complexity, use think-pair-share for collaborative problem solving, and offer choice in problem-solving approaches.";
+    } else if (subject.includes("science")) {
+      return "Provide hands-on activities for kinesthetic learners, offer graphic organizers for organization support, use multimedia resources for visual learners, and provide choice in demonstration methods.";
+    } else {
+      return "Use multiple learning modalities (visual, auditory, kinesthetic), provide flexible grouping options, offer choice in assignments and demonstration methods, use scaffolded instruction, and provide additional support materials as needed.";
     }
   }
 }
