@@ -29,7 +29,8 @@ import {
   Upload,
   Mail,
   Key,
-  Database
+  Database,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -865,6 +866,136 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
+            {/* AI & Automation Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2 text-red-600" />
+                  AI & Automation Features
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">Manage AI-powered features and automation capabilities.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Standards Suggestion</h4>
+                      <p className="text-sm text-gray-600 mb-3">AI suggests curriculum standards based on lesson objectives</p>
+                      <Badge variant="default">Active</Badge>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Feedback Generation</h4>
+                      <p className="text-sm text-gray-600 mb-3">AI generates constructive feedback suggestions</p>
+                      <Badge variant="default">Active</Badge>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Pattern Analysis</h4>
+                      <p className="text-sm text-gray-600 mb-3">AI analyzes trends across observations</p>
+                      <Badge variant="default">Active</Badge>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Standards & Data Model */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <GraduationCap className="w-5 h-5 mr-2 text-red-600" />
+                  Standards & Data Model
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">Enhanced data tracking for standards alignment and student metrics.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Standards Tracking</h4>
+                      <p className="text-sm text-gray-600 mb-3">Track curriculum standards addressed in observations</p>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        <Badge variant="outline" className="text-xs">Common Core</Badge>
+                        <Badge variant="outline" className="text-xs">CSP</Badge>
+                        <Badge variant="outline" className="text-xs">NGSS</Badge>
+                        <Badge variant="outline" className="text-xs">CSTA</Badge>
+                      </div>
+                      <Badge variant="default">Configured</Badge>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Student Data Integration</h4>
+                      <p className="text-sm text-gray-600 mb-3">Track student counts and engagement metrics</p>
+                      <Badge variant="default">Active</Badge>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Growth Tracking</h4>
+                      <p className="text-sm text-gray-600 mb-3">Monitor teacher progress on previous feedback</p>
+                      <Badge variant="default">Enabled</Badge>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Lesson Content Analysis</h4>
+                      <p className="text-sm text-gray-600 mb-3">Enhanced tracking of lesson topics and objectives</p>
+                      <Badge variant="default">Active</Badge>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Integration Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Upload className="w-5 h-5 mr-2 text-red-600" />
+                  External Integrations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">Manage connections to external platforms and services.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Google Classroom</h4>
+                      <p className="text-sm text-gray-600 mb-3">Import class rosters and lesson materials</p>
+                      <Badge variant="secondary">Not Configured</Badge>
+                      <Button size="sm" variant="outline" className="mt-2 w-full">
+                        Configure
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Canvas LMS</h4>
+                      <p className="text-sm text-gray-600 mb-3">Sync with Canvas course data</p>
+                      <Badge variant="secondary">Available</Badge>
+                      <Button size="sm" variant="outline" className="mt-2 w-full" disabled>
+                        Coming Soon
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-2">Schoology</h4>
+                      <p className="text-sm text-gray-600 mb-3">Connect with Schoology platform</p>
+                      <Badge variant="secondary">Available</Badge>
+                      <Button size="sm" variant="outline" className="mt-2 w-full" disabled>
+                        Coming Soon
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* System Settings */}
             <Card>
               <CardHeader>

@@ -85,6 +85,11 @@ export const walkthroughs = pgTable("walkthroughs", {
   lessonObjective: text("lesson_objective"),
   lessonPlanUrl: varchar("lesson_plan_url"),
   
+  // Enhanced data model features
+  standardsCovered: jsonb("standards_covered").$type<string[]>().default([]), // Standards/CSP principles tracked
+  studentCount: integer("student_count"), // Number of students present
+  lessonTopics: text("lesson_topics"), // Additional content description beyond objective
+  
   // Observations
   evidenceOfLearning: text("evidence_of_learning"),
   behaviorRoutines: jsonb("behavior_routines"), // {routines: string[], notes: string}
@@ -101,6 +106,10 @@ export const walkthroughs = pgTable("walkthroughs", {
   strengths: text("strengths"),
   areasForGrowth: text("areas_for_growth"),
   additionalComments: text("additional_comments"),
+  
+  // Growth tracking features
+  previousFeedbackAddressed: boolean("previous_feedback_addressed"), // Progress on prior observations
+  growthNotes: text("growth_notes"), // Specific growth observations and improvements
   
   // Follow-up
   followUpNeeded: boolean("follow_up_needed").default(false),

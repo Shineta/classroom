@@ -762,6 +762,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI/Automation Routes
+  app.post("/api/ai/suggest-standards", isAuthenticated, async (req, res) => {
+    try {
+      const { lessonObjective, subject } = req.body;
+      
+      if (!lessonObjective || !subject) {
+        return res.status(400).json({ message: "Lesson objective and subject are required" });
+      }
+
+      const { suggestStandards } = await import('./ai-services');
+      const suggestions = await suggestStandards(lessonObjective, subject);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error suggesting standards:", error);
+      res.status(500).json({ message: "Failed to suggest standards" });
+    }
+  });
+
+  app.post("/api/ai/generate-feedback", isAuthenticated, async (req, res) => {
+    try {
+      const observationData = req.body;
+      
+      const { generateFeedbackSuggestions } = await import('./ai-services');
+      const feedback = await generateFeedbackSuggestions(observationData);
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error generating feedback:", error);
+      res.status(500).json({ message: "Failed to generate feedback" });
+    }
+  });
+
+  app.get("/api/ai/analyze-patterns", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!['coach', 'leadership', 'admin'].includes(req.user.role)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const walkthroughs = await storage.getWalkthroughs();
+      const { analyzeWalkthroughPatterns } = await import('./ai-services');
+      
+      const walkthroughData = walkthroughs.map(w => ({
+        id: w.id,
+        teacherId: w.teacherId,
+        subject: w.subject,
+        strengths: w.strengths || '',
+        areasForGrowth: w.areasForGrowth || '',
+        engagementLevel: w.engagementLevel || '3',
+        dateTime: w.dateTime.toISOString(),
+      }));
+
+      const patterns = await analyzeWalkthroughPatterns(walkthroughData);
+      res.json(patterns);
+    } catch (error) {
+      console.error("Error analyzing patterns:", error);
+      res.status(500).json({ message: "Failed to analyze patterns" });
+    }
+  });
+
+  app.post("/api/ai/generate-report", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!['leadership', 'admin'].includes(req.user.role)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { timeframe } = req.body;
+      const stats = await storage.getStats();
+      const walkthroughs = await storage.getWalkthroughs();
+      
+      const { analyzeWalkthroughPatterns, generateAutomatedReport } = await import('./ai-services');
+      
+      const walkthroughData = walkthroughs.map(w => ({
+        id: w.id,
+        teacherId: w.teacherId,
+        subject: w.subject,
+        strengths: w.strengths || '',
+        areasForGrowth: w.areasForGrowth || '',
+        engagementLevel: w.engagementLevel || '3',
+        dateTime: w.dateTime.toISOString(),
+      }));
+
+      const patterns = await analyzeWalkthroughPatterns(walkthroughData);
+      
+      const reportStats = {
+        totalWalkthroughs: stats.total,
+        pendingReviews: walkthroughs.filter(w => w.reviewStatus === 'pending').length,
+        averageEngagement: stats.averageRating || 3,
+        topSubjects: Object.entries(
+          walkthroughs.reduce((acc, w) => {
+            acc[w.subject] = (acc[w.subject] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>)
+        ).map(([subject, count]) => ({ subject, count })).slice(0, 5),
+        teachersObserved: stats.teachersObserved,
+      };
+
+      const report = await generateAutomatedReport(timeframe || 'this month', reportStats, patterns);
+      res.json({ report, patterns, stats: reportStats });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      res.status(500).json({ message: "Failed to generate report" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time collaboration

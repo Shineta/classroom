@@ -1,0 +1,50 @@
+Observer (Classroom Observer)
+Role & Current Capabilities: Observers conduct classroom walkthroughs and record observation data. In the current app, an observer has a “My Walkthroughs” dashboard tab showing recent observations with filters and stats
+GitHub
+. They can create new walkthrough reports (via New Walkthrough button) and see a list of their observations including teacher, subject, date/time, engagement level, and status
+GitHub
+GitHub
+. Each entry offers quick actions to view the full report or edit the walkthrough
+GitHub
+. The Walkthrough form captures rich data (teacher, grade, lesson objective, evidence of learning, student engagement, climate, etc.) as defined in the schema
+GitHub
+. Observers can also add co-observers and mark if a follow-up/review by a coach is needed
+GitHub
+GitHub
+. Pages/Dashboards for Observers:
+Walkthrough Dashboard: Displays the observer’s walkthrough stats and list. It includes summary cards (total observations, this week’s count, unique teachers, avg duration) for their activity
+GitHub
+GitHub
+, a filter bar (by teacher, date range, etc.), and a table of recent walkthroughs
+GitHub
+. This page lets them search or sort their observations and quickly identify drafts vs. completed reports (e.g. Draft, Completed, or Follow-up Needed statuses are shown with badges
+GitHub
+GitHub
+).
+New Walkthrough Form: A multi-tab form (Basic Info, Observations, Assessment, Feedback) for entering observation details. Observers record the lesson info, student engagement (1–5), classroom climate, transitions, specific teaching practices ratings, etc. They also enter narrative feedback (“Strengths”, “Areas for Growth”) and can upload artifacts like lesson plans. The form supports saving as draft or marking complete
+GitHub
+GitHub
+. It also allows tagging additional observers (for collaborative note-taking) and toggling “Follow-up needed” to assign a coach reviewer
+GitHub
+GitHub
+.
+Walkthrough Report: A read-only report view for any completed observation, with all data formatted for printing
+GitHub
+GitHub
+. Observers use this to review the finalized feedback or to print/share results. It shows every section of the walkthrough (lesson details, ratings, feedback, etc.), including any coach’s review comments once available
+GitHub
+GitHub
+.
+Improvement Suggestions for Observers:
+Restrict Data to Own Observations: Ensure observers only see and edit their own (or shared) walkthroughs. Currently, the backend getWalkthroughs returns all entries and the update check is overly broad (any user with role “observer” passes authorization)
+GitHub
+. We should enforce that an observer can fetch or modify a walkthrough only if they created it or are listed as a collaborator. Role-based filtering on the /api/walkthroughs query (e.g. automatically apply createdBy = userId or an “in observers list” condition) will prevent accidental access to others’ data.
+Indicate Review Status: Enhance the observer’s dashboard to highlight when a completed walkthrough has been reviewed by a coach. For example, show a “Reviewed” checkmark or include the coach’s feedback snippet once reviewStatus is completed. Currently, an observation with follow-up just shows “Follow-up Needed” until completion
+GitHub
+GitHub
+; after a coach completes the review, the observer should see that it’s resolved. This could be a status update (e.g. Completed (Reviewed) vs Completed (Pending Review)).
+Leverage Automation for Observers: Add tools to help observers fill out the form more efficiently. The app already integrates AI to generate feedback text for strengths/growth areas
+GitHub
+GitHub
+. We should expose this via a “Auto-Fill Feedback” button (using the existing generateWalkthroughFeedback API) in the Feedback tab, with a loading indicator and then allow the observer to edit the suggested text. This saves time and ensures more consistent feedback. Other automation ideas: auto-timestamp start/end times, and if integrated with Google Classroom, automatically pull class rosters to populate number of students or fetch the lesson topic (reducing manual entry).
+Additional Observer Dashboard Features: Over time, provide observers with a personal analytics view – e.g. charts of the distribution of ratings they’ve given or how many observations they’ve done per teacher. This can help an observer reflect on their own focus areas or ensure they are covering all teachers equally. These could be simple bar graphs or counts (for instance, “5 observations in Math, 3 in Science” or average engagement score observed per grade level).
