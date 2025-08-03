@@ -251,7 +251,7 @@ export default function TeacherDashboard() {
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="text-lg font-semibold text-gray-900">{plan.title}</h3>
-                                <Badge className={getStatusColor(plan.status)}>{plan.status}</Badge>
+                                <Badge className={getStatusColor(plan.status || "draft")}>{plan.status}</Badge>
                                 {plan.isPublic && (
                                   <Badge variant="outline" className="text-blue-600 border-blue-200">
                                     <Eye className="w-3 h-3 mr-1" />

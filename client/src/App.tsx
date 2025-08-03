@@ -15,6 +15,7 @@ import LeadershipDashboard from "@/pages/LeadershipDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import TeacherDashboard from "@/pages/TeacherDashboard";
 import LessonPlanForm from "@/pages/LessonPlanForm";
+import LessonPlanView from "@/pages/LessonPlanView";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/teacher/dashboard" component={TeacherDashboard} />
           <Route path="/lesson-plan/new" component={() => <LessonPlanForm lessonPlanId="new" />} />
           <Route path="/lesson-plan/:id/edit" component={({ params }) => <LessonPlanForm lessonPlanId={params.id} />} />
+          <Route path="/lesson-plan/:id" component={({ params }) => <LessonPlanView lessonPlanId={params.id} />} />
           {/* Redirect any other routes to teacher dashboard */}
           <Route component={() => <TeacherDashboard />} />
         </>
@@ -64,6 +66,7 @@ function Router() {
           <Route path="/teacher/dashboard" component={TeacherDashboard} />
           <Route path="/lesson-plan/new" component={() => <LessonPlanForm lessonPlanId="new" />} />
           <Route path="/lesson-plan/:id/edit" component={({ params }) => <LessonPlanForm lessonPlanId={params.id} />} />
+          <Route path="/lesson-plan/:id" component={({ params }) => <LessonPlanView lessonPlanId={params.id} />} />
         </>
       )}
       <Route component={NotFound} />
