@@ -116,7 +116,7 @@ export default function TeacherDashboard() {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         return filteredPlans.filter(plan => 
-          new Date(plan.updatedAt) >= weekAgo
+          plan.updatedAt && new Date(plan.updatedAt) >= weekAgo
         );
       case "upcoming":
         return filteredPlans.filter(plan => 
@@ -437,7 +437,7 @@ export default function TeacherDashboard() {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                   <Calendar className="w-4 h-4" />
-                                  Updated {format(new Date(plan.updatedAt), "MMM d")}
+                                  Updated {plan.updatedAt ? format(new Date(plan.updatedAt), "MMM d") : "N/A"}
                                 </div>
                               </div>
 
