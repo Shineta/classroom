@@ -18,7 +18,8 @@ import {
   Edit,
   FileText,
   LogOut,
-  User
+  User,
+  Send
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +69,39 @@ export default function TeacherDashboard() {
   const { data: stats = {} } = useQuery({
     queryKey: ["/api/lesson-plans/stats"],
   });
+
+  // Submit lesson plan for the week
+  const submitLessonPlanMutation = useMutation({
+    mutationFn: async ({ planId, weekNumber }: { planId: string; weekNumber: number }) => {
+      const response = await apiRequest("POST", `/api/lesson-plans/${planId}/submit`, { weekNumber });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lesson-plans/my-plans"] });
+      toast({
+        title: "Success",
+        description: "Lesson plan submitted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Submission failed",
+        description: error.message || "Failed to submit lesson plan",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Get current week number
+  const getCurrentWeekNumber = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = now.getTime() - start.getTime();
+    const oneWeek = 1000 * 60 * 60 * 24 * 7;
+    return Math.ceil(diff / oneWeek);
+  };
+
+  const currentWeek = getCurrentWeekNumber();
 
   const filteredPlans = (lessonPlans as LessonPlanWithDetails[]).filter((plan: LessonPlanWithDetails) =>
     plan.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -316,6 +350,20 @@ export default function TeacherDashboard() {
                                   Edit
                                 </Button>
                               </Link>
+                              
+                              {/* Weekly Submission Button */}
+                              {plan.status === 'finalized' && (
+                                <Button 
+                                  size="sm"
+                                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                                  onClick={() => submitLessonPlanMutation.mutate({ planId: plan.id, weekNumber: currentWeek })}
+                                  disabled={submitLessonPlanMutation.isPending}
+                                  title={`Submit for Week ${currentWeek} (Due Fridays)`}
+                                >
+                                  <Send className="w-4 h-4 mr-1" />
+                                  Submit Week {currentWeek}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </CardContent>

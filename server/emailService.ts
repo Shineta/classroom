@@ -306,6 +306,137 @@ To address the follow-up items, please log into your teacher dashboard in the Cl
       return false;
     }
   }
+
+  async sendLessonPlanSubmissionNotification(data: {
+    lessonPlan: any;
+    teacher: Teacher;
+    coach: User;
+    isLate: boolean;
+    weekNumber: number;
+  }): Promise<boolean> {
+    if (!this.isEnabled) {
+      console.log("Email service disabled - SENDGRID_API_KEY not configured");
+      return false;
+    }
+
+    if (!data.coach.email) {
+      console.log("Coach email not provided - cannot send notification");
+      return false;
+    }
+
+    try {
+      const { lessonPlan, teacher, coach, isLate, weekNumber } = data;
+      
+      const subject = `Lesson Plan ${isLate ? 'Late ' : ''}Submission - Week ${weekNumber}: ${teacher.firstName} ${teacher.lastName}`;
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: ${isLate ? '#dc2626' : '#2563eb'};">
+            Lesson Plan ${isLate ? 'Late ' : ''}Submission Notification
+          </h2>
+          
+          <p>Hello ${coach.firstName},</p>
+          
+          <p>${teacher.firstName} ${teacher.lastName} has submitted their lesson plan for Week ${weekNumber}${isLate ? ' (LATE SUBMISSION)' : ''}.</p>
+          
+          ${isLate ? `
+          <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+            <p style="color: #dc2626; font-weight: bold; margin: 0;">⚠️ Late Submission Alert</p>
+            <p style="color: #991b1b; margin: 5px 0 0 0;">This lesson plan was submitted after the Friday deadline.</p>
+          </div>
+          ` : `
+          <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0;">
+            <p style="color: #16a34a; font-weight: bold; margin: 0;">✓ On-Time Submission</p>
+            <p style="color: #15803d; margin: 5px 0 0 0;">This lesson plan was submitted on time.</p>
+          </div>
+          `}
+          
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1e40af; margin-top: 0;">Lesson Plan Details</h3>
+            <ul style="list-style: none; padding: 0;">
+              <li><strong>Teacher:</strong> ${teacher.firstName} ${teacher.lastName}</li>
+              <li><strong>Title:</strong> ${lessonPlan.title}</li>
+              <li><strong>Subject:</strong> ${lessonPlan.subject}</li>
+              <li><strong>Grade Level:</strong> ${lessonPlan.gradeLevel || 'Not specified'}</li>
+              <li><strong>Week:</strong> ${weekNumber}</li>
+              <li><strong>Submitted:</strong> ${new Date(lessonPlan.submittedAt).toLocaleString()}</li>
+              ${lessonPlan.dateScheduled ? `<li><strong>Scheduled Date:</strong> ${new Date(lessonPlan.dateScheduled).toLocaleDateString()}</li>` : ''}
+            </ul>
+          </div>
+          
+          <p>You can review the lesson plan details by logging into the Classroom Walkthrough Tool and navigating to the lesson plans section.</p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+          
+          <p style="font-size: 12px; color: #9ca3af;">
+            This is an automated notification from the Classroom Walkthrough Tool. Please do not reply to this email.
+          </p>
+        </div>
+      `;
+
+      const text = `
+Lesson Plan ${isLate ? 'Late ' : ''}Submission Notification
+
+${teacher.firstName} ${teacher.lastName} has submitted their lesson plan for Week ${weekNumber}${isLate ? ' (LATE SUBMISSION)' : ''}.
+
+Lesson Plan Details:
+- Teacher: ${teacher.firstName} ${teacher.lastName}
+- Title: ${lessonPlan.title}
+- Subject: ${lessonPlan.subject}
+- Grade Level: ${lessonPlan.gradeLevel || 'Not specified'}
+- Week: ${weekNumber}
+- Submitted: ${new Date(lessonPlan.submittedAt).toLocaleString()}
+${lessonPlan.dateScheduled ? `- Scheduled Date: ${new Date(lessonPlan.dateScheduled).toLocaleDateString()}` : ''}
+
+${isLate ? 'This lesson plan was submitted after the Friday deadline.' : 'This lesson plan was submitted on time.'}
+      `;
+
+      await mailService.send({
+        to: coach.email,
+        from: process.env.FROM_EMAIL || 'noreply@classroom-walkthrough.com',
+        subject,
+        text,
+        html,
+      });
+
+      console.log(`Lesson plan submission notification sent to coach ${coach.email}`);
+      return true;
+
+    } catch (error) {
+      console.error('Failed to send lesson plan submission notification:', error);
+      return false;
+    }
+  }
+}
+
+// Utility functions for deadline tracking
+export function getCurrentWeekNumber(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const diff = now.getTime() - start.getTime();
+  const oneWeek = 1000 * 60 * 60 * 24 * 7;
+  return Math.ceil(diff / oneWeek);
+}
+
+export function getFridayDeadline(weekNumber: number, year?: number): Date {
+  const currentYear = year || new Date().getFullYear();
+  const jan1 = new Date(currentYear, 0, 1);
+  const daysToFirstFriday = (5 - jan1.getDay() + 7) % 7;
+  const firstFriday = new Date(currentYear, 0, 1 + daysToFirstFriday);
+  
+  // Calculate the Friday of the specified week
+  const targetFriday = new Date(firstFriday);
+  targetFriday.setDate(firstFriday.getDate() + (weekNumber - 1) * 7);
+  
+  // Set to end of day (11:59 PM)
+  targetFriday.setHours(23, 59, 59, 999);
+  
+  return targetFriday;
+}
+
+export function isSubmissionLate(submissionDate: Date, weekNumber: number): boolean {
+  const deadline = getFridayDeadline(weekNumber);
+  return submissionDate > deadline;
 }
 
 export const emailService = new EmailService();

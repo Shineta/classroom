@@ -94,8 +94,14 @@ export const lessonPlans = pgTable("lesson_plans", {
   attachmentUrls: jsonb("attachment_urls").$type<string[]>().default([]),
   
   // Status and workflow
-  status: varchar("status").default("draft"), // draft, finalized, archived
+  status: varchar("status").default("draft"), // draft, submitted, finalized, archived
   isPublic: boolean("is_public").default(false), // Can observers see this for reference?
+  
+  // Weekly submission tracking
+  weekOfYear: integer("week_of_year"), // Track which week this plan is for (1-52)
+  submittedAt: timestamp("submitted_at"), // When the plan was submitted
+  isLateSubmission: boolean("is_late_submission").default(false), // Track if submitted after Friday deadline
+  coachNotified: boolean("coach_notified").default(false), // Track if coach was notified of submission
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -329,8 +335,13 @@ export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
   status: true,
   isPublic: true,
   createdBy: true,
+  weekOfYear: true,
+  submittedAt: true,
+  isLateSubmission: true,
+  coachNotified: true,
 }).extend({
   dateScheduled: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
+  submittedAt: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
 });
 
 export const insertWalkthroughSchema = createInsertSchema(walkthroughs).pick({

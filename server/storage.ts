@@ -108,6 +108,7 @@ export interface IStorage {
   
   // Search
   searchUsers(query: string): Promise<User[]>;
+  getUsersByRole(role: string): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1148,6 +1149,29 @@ export class DatabaseStorage implements IStorage {
       finalized: finalizedResult.count,
       avgDuration: avgDurationResult.avg,
     };
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(
+        or(
+          like(users.firstName, `%${query}%`),
+          like(users.lastName, `%${query}%`),
+          like(users.email, `%${query}%`),
+          like(users.username, `%${query}%`)
+        )
+      )
+      .orderBy(users.lastName, users.firstName);
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, role))
+      .orderBy(users.lastName, users.firstName);
   }
 }
 

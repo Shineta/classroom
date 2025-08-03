@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { ObjectStorageService } from "./objectStorage";
 import { aiService } from "./aiService";
-import { emailService } from "./emailService";
+import { emailService, getCurrentWeekNumber, getFridayDeadline, isSubmissionLate } from "./emailService";
 import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema, insertLessonPlanSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -1090,6 +1090,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating lesson plan:", error);
       res.status(400).json({ message: "Failed to update lesson plan" });
+    }
+  });
+
+  // Submit lesson plan for the week with coach notification
+  app.post("/api/lesson-plans/:id/submit", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id;
+      const { weekNumber } = req.body;
+      
+      if (!weekNumber || weekNumber < 1 || weekNumber > 52) {
+        return res.status(400).json({ message: "Valid week number (1-52) is required" });
+      }
+
+      // Get the lesson plan
+      const lessonPlan = await storage.getLessonPlan(req.params.id);
+      if (!lessonPlan) {
+        return res.status(404).json({ message: "Lesson plan not found" });
+      }
+
+      // Check if user owns this lesson plan
+      if (lessonPlan.createdBy !== userId) {
+        return res.status(403).json({ message: "Not authorized to submit this lesson plan" });
+      }
+
+      const now = new Date();
+      const isLate = isSubmissionLate(now, weekNumber);
+
+      // Update lesson plan with submission data
+      const submissionData = {
+        status: "submitted" as const,
+        submittedAt: now,
+        weekOfYear: weekNumber,
+        isLateSubmission: isLate,
+        coachNotified: false, // Will be set to true after notification
+      };
+
+      const updatedLessonPlan = await storage.updateLessonPlan(req.params.id, submissionData);
+
+      // Get teacher information
+      const teacher = await storage.getTeacher(lessonPlan.teacherId);
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      // Find instructional coach to notify
+      const coaches = await storage.getUsersByRole('coach');
+      if (coaches.length > 0) {
+        // For now, notify the first coach found
+        // In a real system, you might have coaches assigned to specific teachers/schools
+        const coach = coaches[0];
+        
+        const notificationSent = await emailService.sendLessonPlanSubmissionNotification({
+          lessonPlan: updatedLessonPlan,
+          teacher,
+          coach,
+          isLate,
+          weekNumber,
+        });
+
+        if (notificationSent) {
+          // Mark as coach notified
+          await storage.updateLessonPlan(req.params.id, { coachNotified: true });
+        }
+      }
+
+      res.json({
+        success: true,
+        lessonPlan: updatedLessonPlan,
+        isLate,
+        weekNumber,
+        message: `Lesson plan submitted for Week ${weekNumber}${isLate ? ' (late submission)' : ' (on time)'}`,
+      });
+
+    } catch (error) {
+      console.error("Error submitting lesson plan:", error);
+      res.status(500).json({ message: "Failed to submit lesson plan" });
     }
   });
 
