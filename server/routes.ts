@@ -1222,7 +1222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               teacherName: `${teacher.firstName} ${teacher.lastName}`,
               lessonPlanTitle: updatedLessonPlan.title,
               subject: updatedLessonPlan.subject,
-              gradeLevel: updatedLessonPlan.gradeLevel,
+              gradeLevel: updatedLessonPlan.gradeLevel || undefined,
               isLate,
               recipientPhone: coachPhoneNumber
             });
