@@ -976,7 +976,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(extractedData);
     } catch (error) {
       console.error("Error extracting lesson plan data:", error);
-      res.status(500).json({ message: "Failed to extract data from file" });
+      
+      let errorMessage = "Failed to extract data from file";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      res.status(500).json({ message: errorMessage });
     }
   });
 

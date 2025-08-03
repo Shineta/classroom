@@ -20,13 +20,53 @@ export async function extractLessonPlanData(file: Express.Multer.File): Promise<
     // Extract text based on file type
     if (file.mimetype === "application/pdf") {
       try {
-        const pdfParse = await import("pdf-parse");
-        const pdfData = await pdfParse.default(file.buffer);
-        textContent = pdfData.text;
-        console.log("PDF text extracted, length:", textContent.length);
+        // Use pdfjs-dist for more reliable PDF text extraction
+        const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js");
+        
+        const typedArray = new Uint8Array(file.buffer);
+        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        
+        console.log(`PDF loaded with ${pdf.numPages} pages`);
+        
+        let fullText = "";
+        
+        // Extract text from all pages
+        for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 20); pageNum++) { // Limit to first 20 pages
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ');
+          
+          fullText += pageText + '\n';
+        }
+        
+        textContent = fullText.trim();
+        console.log("PDF text extracted successfully, length:", textContent.length);
+        
+        if (!textContent || textContent.trim().length === 0) {
+          throw new Error("PDF appears to be empty or unreadable");
+        }
       } catch (pdfError) {
-        console.error("Error parsing PDF:", pdfError);
-        throw new Error("Failed to extract text from PDF file");
+        console.error("Error parsing PDF with pdfjs:", pdfError);
+        
+        // Fallback: try simple text extraction
+        try {
+          textContent = file.buffer.toString('utf-8');
+          // Clean up any binary characters but preserve educational content
+          textContent = textContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          if (textContent.length < 50) {
+            throw new Error("PDF text extraction failed - insufficient content");
+          }
+          
+          console.log("Used fallback text extraction, length:", textContent.length);
+        } catch (fallbackError) {
+          throw new Error("Failed to extract text from PDF file. The PDF may be image-based or encrypted. Please try converting to Word format or use a text-based PDF.");
+        }
       }
     } else if (
       file.mimetype === "application/msword" ||

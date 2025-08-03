@@ -59,7 +59,8 @@ export default function LessonPlanUploader({ onDataExtracted }: LessonPlanUpload
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process file');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to process file' }));
+        throw new Error(errorData.message || 'Failed to process file');
       }
 
       const extractedData = await response.json();
@@ -72,9 +73,24 @@ export default function LessonPlanUploader({ onDataExtracted }: LessonPlanUpload
       onDataExtracted(extractedData);
     } catch (error) {
       console.error('Error processing file:', error);
+      
+      let errorMessage = "There was an error extracting data from your file. Please try again or fill in the form manually.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("PDF")) {
+          errorMessage = "Unable to extract text from this PDF. The file may be image-based or encrypted. Try converting to Word format or use a text-based PDF.";
+        } else if (error.message.includes("Word") || error.message.includes("document")) {
+          errorMessage = "Unable to process this Word document. Please ensure the file is not corrupted and try again.";
+        } else if (error.message.includes("Unauthorized")) {
+          errorMessage = "Please log in again and try uploading your file.";
+        } else if (error.message !== "Failed to process file") {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error processing file",
-        description: "There was an error extracting data from your file. Please try again or fill in the form manually.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
