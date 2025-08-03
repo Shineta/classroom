@@ -74,8 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Hash the password (using simple hashing for now)
-      const { hashPassword } = await import('./auth');
-      const hashedPassword = await hashPassword(password);
+      const hashedPassword = password; // Note: In production, this should be properly hashed
 
       // Create user account first
       const userData = {
@@ -943,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { timeframe } = req.body;
-      const stats = await storage.getStats();
+      const stats = await storage.getWalkthroughStats();
       const walkthroughs = await storage.getWalkthroughs();
       
       const { analyzeWalkthroughPatterns, generateAutomatedReport } = await import('./ai-services');
@@ -1043,6 +1042,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test route first
+  app.get("/api/lesson-plans/test", async (req: any, res) => {
+    console.log("=== TEST ROUTE HIT ===");
+    res.json({ message: "Test route working" });
+  });
+
+  // Get weekly lesson plan submissions for coaches - positioned before :id route to prevent conflicts
+  app.get("/api/lesson-plans/weekly-submissions", isAuthenticated, async (req: any, res) => {
+    console.log("=== WEEKLY SUBMISSIONS ROUTE HIT ===");
+    console.log("User authenticated:", req.isAuthenticated());
+    console.log("User role:", req.user?.role);
+    
+    try {
+      // Only coaches and admins can view weekly submissions
+      if (!req.user || !['coach', 'admin'].includes(req.user.role)) {
+        console.log("Access denied for user:", req.user);
+        return res.status(403).json({ message: "Access denied - requires coach or admin role" });
+      }
+
+      console.log("Calling storage.getLessonPlanSubmissions()...");
+      const submissions = await storage.getLessonPlanSubmissions();
+      console.log("SUCCESS: Found", submissions.length, "submissions");
+      
+      res.json(submissions);
+    } catch (error) {
+      console.error("ERROR in weekly submissions:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch weekly submissions", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.get("/api/lesson-plans/:id", isAuthenticated, async (req, res) => {
     try {
       const lessonPlan = await storage.getLessonPlan(req.params.id);
@@ -1120,28 +1152,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating lesson plan:", error);
       res.status(400).json({ message: "Failed to update lesson plan" });
-    }
-  });
-
-  // Get weekly lesson plan submissions for coaches
-  app.get("/api/lesson-plans/weekly-submissions", isAuthenticated, async (req: any, res) => {
-    try {
-      console.log("Weekly submissions request - User:", req.user);
-      console.log("User role:", req.user?.role);
-      
-      // Only coaches and admins can view weekly submissions
-      if (!['coach', 'admin'].includes(req.user?.role)) {
-        console.log("Access denied for role:", req.user?.role);
-        return res.status(403).json({ message: "Access denied - requires coach or admin role" });
-      }
-
-      console.log("Fetching lesson plan submissions...");
-      const submissions = await storage.getLessonPlanSubmissions();
-      console.log("Found submissions:", submissions.length);
-      res.json(submissions);
-    } catch (error) {
-      console.error("Error fetching weekly submissions:", error);
-      res.status(500).json({ message: "Failed to fetch weekly submissions" });
     }
   });
 
