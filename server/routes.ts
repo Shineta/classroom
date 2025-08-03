@@ -902,6 +902,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get public lesson plans for observers to select from
+  app.get("/api/lesson-plans/public", isAuthenticated, async (req: any, res) => {
+    try {
+      const filters: any = { isPublic: true, status: "finalized" };
+      if (req.query.subject) filters.subject = req.query.subject;
+      if (req.query.gradeLevel) filters.gradeLevel = req.query.gradeLevel;
+      
+      const lessonPlans = await storage.getLessonPlans(filters);
+      res.json(lessonPlans);
+    } catch (error) {
+      console.error("Error fetching public lesson plans:", error);
+      res.status(500).json({ message: "Failed to fetch public lesson plans" });
+    }
+  });
+
   app.get("/api/lesson-plans/stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id;

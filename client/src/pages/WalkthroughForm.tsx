@@ -17,12 +17,12 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Save, Check, Clock, Users, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Check, Clock, Users, Sparkles, BookOpen } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import StarRating from "@/components/StarRating";
 import StandardsSelector from "@/components/StandardsSelector";
 import AIFeedbackSuggestions from "@/components/AIFeedbackSuggestions";
-import type { Teacher, Location, User, WalkthroughWithDetails } from "@shared/schema";
+import type { Teacher, Location, User, WalkthroughWithDetails, LessonPlanWithDetails } from "@shared/schema";
 
 const formSchema = z.object({
   teacherId: z.string().min(1, "Teacher is required"),
@@ -85,6 +85,8 @@ export default function WalkthroughForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [startTime] = useState(new Date());
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lessonPlanMode, setLessonPlanMode] = useState<"upload" | "select">("upload");
+  const [selectedLessonPlan, setSelectedLessonPlan] = useState<LessonPlanWithDetails | null>(null);
 
   const walkthroughId = params?.id || editParams?.id;
   const isEditing = walkthroughId && walkthroughId !== "new";
@@ -119,6 +121,12 @@ export default function WalkthroughForm() {
   const { data: userSearchResults } = useQuery<User[]>({
     queryKey: ["/api/users/search", { q: searchQuery }],
     enabled: isAuthenticated && searchQuery.length > 2,
+  });
+
+  // Fetch public lesson plans for observers to select from
+  const { data: publicLessonPlans, isLoading: lessonPlansLoading } = useQuery<LessonPlanWithDetails[]>({
+    queryKey: ["/api/lesson-plans/public"],
+    enabled: isAuthenticated && lessonPlanMode === "select",
   });
 
   // AI feedback generation mutation
@@ -418,6 +426,46 @@ export default function WalkthroughForm() {
         });
       }
     }
+  };
+
+  // Handle lesson plan selection from teacher-created plans
+  const handleLessonPlanSelect = (lessonPlan: LessonPlanWithDetails) => {
+    setSelectedLessonPlan(lessonPlan);
+    
+    // Auto-populate form fields with lesson plan data
+    if (lessonPlan.subject) {
+      form.setValue("subject", lessonPlan.subject);
+      handleFieldChange("subject", lessonPlan.subject);
+    }
+    if (lessonPlan.gradeLevel) {
+      form.setValue("gradeLevel", lessonPlan.gradeLevel);
+      handleFieldChange("gradeLevel", lessonPlan.gradeLevel);
+    }
+    if (lessonPlan.objective) {
+      form.setValue("lessonObjective", lessonPlan.objective);
+      handleFieldChange("lessonObjective", lessonPlan.objective);
+    }
+    if (lessonPlan.topics) {
+      form.setValue("lessonTopics", lessonPlan.topics);
+      handleFieldChange("lessonTopics", lessonPlan.topics);
+    }
+    if (lessonPlan.standardsCovered && lessonPlan.standardsCovered.length > 0) {
+      form.setValue("standardsCovered", lessonPlan.standardsCovered);
+      handleFieldChange("standardsCovered", lessonPlan.standardsCovered);
+    }
+    if (lessonPlan.estimatedStudentCount) {
+      form.setValue("studentCount", lessonPlan.estimatedStudentCount);
+      handleFieldChange("studentCount", lessonPlan.estimatedStudentCount);
+    }
+    
+    // Set lesson plan URL reference
+    form.setValue("lessonPlanUrl", `/lesson-plan/${lessonPlan.id}`);
+    handleFieldChange("lessonPlanUrl", `/lesson-plan/${lessonPlan.id}`);
+    
+    toast({
+      title: "Lesson Plan Selected",
+      description: `"${lessonPlan.title}" has been selected and form fields populated.`,
+    });
   };
 
   // Tab configuration
@@ -793,24 +841,119 @@ export default function WalkthroughForm() {
 
                     <div className="md:col-span-2">
                       <FormLabel>Lesson Plan Access</FormLabel>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition-colors">
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={10485760}
-                          onGetUploadParameters={handleLessonPlanUpload}
-                          onComplete={handleUploadComplete}
-                        >
-                          <div className="flex flex-col items-center">
-                            <div className="text-4xl text-gray-400 mb-4">📎</div>
-                            <p className="text-sm text-gray-600 mb-2">Upload lesson plan or paste link</p>
-                            <span className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors">
-                              Choose File or Add Link
-                            </span>
-                          </div>
-                        </ObjectUploader>
+                      
+                      {/* Mode selector */}
+                      <div className="mb-4">
+                        <div className="flex rounded-lg bg-gray-100 p-1">
+                          <button
+                            type="button"
+                            onClick={() => setLessonPlanMode("upload")}
+                            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                              lessonPlanMode === "upload"
+                                ? "bg-white text-gray-900 shadow-sm"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                          >
+                            Upload or Link
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLessonPlanMode("select")}
+                            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                              lessonPlanMode === "select"
+                                ? "bg-white text-gray-900 shadow-sm"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                          >
+                            Select Teacher Plan
+                          </button>
+                        </div>
                       </div>
-                      {form.watch("lessonPlanUrl") && (
-                        <p className="mt-2 text-sm text-green-600">✓ Lesson plan uploaded</p>
+
+                      {lessonPlanMode === "upload" ? (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition-colors">
+                          <ObjectUploader
+                            maxNumberOfFiles={1}
+                            maxFileSize={10485760}
+                            onGetUploadParameters={handleLessonPlanUpload}
+                            onComplete={handleUploadComplete}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className="text-4xl text-gray-400 mb-4">📎</div>
+                              <p className="text-sm text-gray-600 mb-2">Upload lesson plan or paste link</p>
+                              <span className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors">
+                                Choose File or Add Link
+                              </span>
+                            </div>
+                          </ObjectUploader>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {lessonPlansLoading ? (
+                            <div className="text-center py-6">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+                              <p className="text-sm text-gray-600">Loading lesson plans...</p>
+                            </div>
+                          ) : publicLessonPlans && publicLessonPlans.length > 0 ? (
+                            <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-3">
+                              {publicLessonPlans.map((plan) => (
+                                <div
+                                  key={plan.id}
+                                  onClick={() => handleLessonPlanSelect(plan)}
+                                  className={`p-3 border rounded-lg cursor-pointer transition-colors hover:bg-blue-50 hover:border-blue-300 ${
+                                    selectedLessonPlan?.id === plan.id
+                                      ? "bg-blue-50 border-blue-300"
+                                      : "bg-white border-gray-200"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <h4 className="font-medium text-gray-900">{plan.title}</h4>
+                                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                                        <span>{plan.subject}</span>
+                                        <span>{plan.gradeLevel}</span>
+                                        <span>{plan.duration} min</span>
+                                      </div>
+                                      {plan.objective && (
+                                        <p className="mt-1 text-sm text-gray-700 line-clamp-2">
+                                          {plan.objective}
+                                        </p>
+                                      )}
+                                    </div>
+                                    {selectedLessonPlan?.id === plan.id && (
+                                      <div className="ml-3 text-blue-600">
+                                        <Check className="w-5 h-5" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-6 text-gray-500">
+                              <BookOpen className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                              <p className="text-sm">No public lesson plans available</p>
+                              <p className="text-xs mt-1">Teachers need to create and publish lesson plans first</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Status message */}
+                      {(form.watch("lessonPlanUrl") || selectedLessonPlan) && (
+                        <div className="mt-2">
+                          {selectedLessonPlan ? (
+                            <p className="text-sm text-green-600 flex items-center">
+                              <Check className="w-4 h-4 mr-1" />
+                              Selected: "{selectedLessonPlan.title}"
+                            </p>
+                          ) : form.watch("lessonPlanUrl") ? (
+                            <p className="text-sm text-green-600 flex items-center">
+                              <Check className="w-4 h-4 mr-1" />
+                              Lesson plan uploaded
+                            </p>
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   </div>
