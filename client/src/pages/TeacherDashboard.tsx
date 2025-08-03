@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { 
   BookOpen, 
@@ -16,14 +16,48 @@ import {
   Search,
   Eye,
   Edit,
-  FileText
+  FileText,
+  LogOut,
+  User
 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import type { LessonPlanWithDetails } from "@shared/schema";
 
 export default function TeacherDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("plans");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/logout", {});
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/user"], null);
+      window.location.href = "/auth";
+    },
+    onError: (error) => {
+      toast({
+        title: "Logout failed",
+        description: error.message || "Failed to logout",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch teacher's lesson plans
   const { data: lessonPlans = [], isLoading } = useQuery({
@@ -62,12 +96,44 @@ export default function TeacherDashboard() {
                 <p className="text-green-100">Manage your lesson plans and classroom preparation</p>
               </div>
             </div>
-            <Link href="/lesson-plan/new">
-              <Button className="bg-white text-green-600 hover:bg-green-50">
-                <Plus className="w-4 h-4 mr-2" />
-                New Lesson Plan
-              </Button>
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/lesson-plan/new">
+                <Button className="bg-white text-green-600 hover:bg-green-50">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Lesson Plan
+                </Button>
+              </Link>
+              
+              {/* User Menu with Logout */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="text-white hover:bg-green-700">
+                    <User className="w-5 h-5 mr-2" />
+                    {(user as any)?.firstName || "Teacher"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {(user as any)?.firstName} {(user as any)?.lastName}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {(user as any)?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => logoutMutation.mutate()}
+                    disabled={logoutMutation.isPending}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
