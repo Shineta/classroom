@@ -968,7 +968,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      console.log("Processing file:", req.file.originalname, "Type:", req.file.mimetype);
       const extractedData = await extractLessonPlanData(req.file);
+      console.log("Extracted data:", JSON.stringify(extractedData, null, 2));
       res.json(extractedData);
     } catch (error) {
       console.error("Error extracting lesson plan data:", error);

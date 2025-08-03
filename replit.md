@@ -8,6 +8,12 @@ The platform serves three main user roles: observers (who conduct walkthroughs),
 
 ## Recent Changes (August 2025)
 
+- **Enhanced Lesson Plan File Upload System**: Improved AI-powered auto-population functionality
+  - Fixed file processing for Word documents using mammoth library for proper text extraction
+  - Enhanced regex patterns for better data extraction from structured lesson plans
+  - Improved form field mapping to properly populate title, subject, grade level, objectives, activities, materials, duration, and standards
+  - Added comprehensive debug logging for troubleshooting extraction issues
+  - Updated AI prompt engineering for more accurate field recognition and data formatting
 - **Completed Admin Dashboard System**: Implemented comprehensive administrative interface with red gradient styling
   - Built complete AdminDashboard with user management, teacher roster, and location management
   - Added role-based access control restricting dashboard to admin users only

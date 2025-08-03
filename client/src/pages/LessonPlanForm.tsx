@@ -106,16 +106,30 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
   });
 
   const handleDataExtracted = (extractedData: any) => {
+    console.log("Extracted data:", extractedData);
+    
     // Auto-populate form fields with extracted data
     Object.entries(extractedData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        form.setValue(key as keyof InsertLessonPlan, value);
+      if (value !== undefined && value !== null && value !== "" && value !== "Not specified") {
+        try {
+          // Handle arrays properly
+          if (Array.isArray(value) && value.length > 0) {
+            form.setValue(key as keyof InsertLessonPlan, value);
+          } else if (!Array.isArray(value)) {
+            form.setValue(key as keyof InsertLessonPlan, value);
+          }
+        } catch (error) {
+          console.warn(`Error setting field ${key}:`, error);
+        }
       }
     });
     
+    // Force form re-render
+    form.trigger();
+    
     toast({
       title: "Data extracted successfully",
-      description: "Form fields have been populated with data from your uploaded file. Please review and edit as needed.",
+      description: `Form fields have been populated with data from your uploaded file. Found: ${Object.keys(extractedData).filter(key => extractedData[key] && extractedData[key] !== "Not specified").join(", ")}`,
     });
   };
 
