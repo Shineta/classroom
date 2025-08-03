@@ -319,6 +319,7 @@ export const insertLessonPlanSchema = createInsertSchema(lessonPlans).pick({
   attachmentUrls: true,
   status: true,
   isPublic: true,
+  createdBy: true,
 }).extend({
   dateScheduled: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional().nullable(),
 });
