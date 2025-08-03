@@ -369,9 +369,28 @@ export default function LessonPlanForm({ lessonPlanId }: LessonPlanFormProps) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Grade Level</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g., 9th Grade, Kindergarten" {...field} value={field.value || ""} />
-                            </FormControl>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select grade level" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="kindergarten">Kindergarten</SelectItem>
+                                <SelectItem value="grade-1">Grade 1</SelectItem>
+                                <SelectItem value="grade-2">Grade 2</SelectItem>
+                                <SelectItem value="grade-3">Grade 3</SelectItem>
+                                <SelectItem value="grade-4">Grade 4</SelectItem>
+                                <SelectItem value="grade-5">Grade 5</SelectItem>
+                                <SelectItem value="grade-6">Grade 6</SelectItem>
+                                <SelectItem value="grade-7">Grade 7</SelectItem>
+                                <SelectItem value="grade-8">Grade 8</SelectItem>
+                                <SelectItem value="grade-9">Grade 9</SelectItem>
+                                <SelectItem value="grade-10">Grade 10</SelectItem>
+                                <SelectItem value="grade-11">Grade 11</SelectItem>
+                                <SelectItem value="grade-12">Grade 12</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
