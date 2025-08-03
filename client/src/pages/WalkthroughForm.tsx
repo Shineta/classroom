@@ -239,10 +239,10 @@ export default function WalkthroughForm() {
         studentCount: (walkthrough as any).studentCount || undefined,
         lessonTopics: (walkthrough as any).lessonTopics || "",
         
-        evidenceOfLearning: walkthrough.evidenceOfLearning || "",
+        evidenceOfLearning: walkthrough.evidenceOfLearning || { checkedItems: [], otherItem: "", clarification: "" },
         behaviorRoutines: walkthrough.behaviorRoutines as any || { routines: [], notes: "" },
         climate: walkthrough.climate || undefined,
-        climateNotes: walkthrough.climateNotes || "",
+        climateContributors: walkthrough.climateContributors || [],
         engagementLevel: walkthrough.engagementLevel || undefined,
         transitions: walkthrough.transitions || undefined,
         transitionComments: walkthrough.transitionComments || "",
@@ -388,10 +388,21 @@ export default function WalkthroughForm() {
   const onSubmit = (data: FormData) => {
     const observerDuration = Math.round((new Date().getTime() - startTime.getTime()) / 1000 / 60); // Duration in minutes
     
+    // Convert object fields to strings for backend compatibility
     const formData = {
       ...data,
       observerIds: selectedObservers.map(obs => obs.id),
       observerDuration,
+      // Convert complex objects to JSON strings for backend storage
+      evidenceOfLearning: typeof data.evidenceOfLearning === 'object' 
+        ? JSON.stringify(data.evidenceOfLearning) 
+        : data.evidenceOfLearning,
+      behaviorRoutines: typeof data.behaviorRoutines === 'object' 
+        ? JSON.stringify(data.behaviorRoutines) 
+        : data.behaviorRoutines,
+      effectivenessRatings: typeof data.effectivenessRatings === 'object' 
+        ? JSON.stringify(data.effectivenessRatings) 
+        : data.effectivenessRatings,
     };
 
     if (isEditing) {
@@ -1607,7 +1618,7 @@ export default function WalkthroughForm() {
                         lessonObjective: form.watch("lessonObjective") || "",
                         engagementLevel: form.watch("engagementLevel") || "3",
                         climate: form.watch("climate") || "neutral",
-                        evidenceOfLearning: form.watch("evidenceOfLearning") || "",
+                        evidenceOfLearning: typeof form.watch("evidenceOfLearning") === "string" ? form.watch("evidenceOfLearning") as string : JSON.stringify(form.watch("evidenceOfLearning")) || "",
                         effectivenessRatings: form.watch("effectivenessRatings") || {},
                       }}
                       onApplyFeedback={(feedback) => {
