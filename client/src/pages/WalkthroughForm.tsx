@@ -609,7 +609,7 @@ export default function WalkthroughForm() {
                             <SelectContent>
                               {teachers?.map((teacher) => (
                                 <SelectItem key={teacher.id} value={teacher.id}>
-                                  {teacher.firstName} {teacher.lastName} {teacher.gradeLevel && `(Grade ${teacher.gradeLevel})`}
+                                  {teacher.firstName} {teacher.lastName}
                                 </SelectItem>
                               ))}
                             </SelectContent>
