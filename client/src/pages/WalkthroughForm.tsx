@@ -241,14 +241,20 @@ export default function WalkthroughForm() {
         studentCount: (walkthrough as any).studentCount || undefined,
         lessonTopics: (walkthrough as any).lessonTopics || "",
         
-        evidenceOfLearning: walkthrough.evidenceOfLearning || { checkedItems: [], otherItem: "", clarification: "" },
-        behaviorRoutines: walkthrough.behaviorRoutines as any || { routines: [], notes: "" },
+        evidenceOfLearning: typeof walkthrough.evidenceOfLearning === 'string' 
+          ? JSON.parse(walkthrough.evidenceOfLearning || '{"checkedItems":[],"otherItem":"","clarification":""}')
+          : walkthrough.evidenceOfLearning || { checkedItems: [], otherItem: "", clarification: "" },
+        behaviorRoutines: typeof walkthrough.behaviorRoutines === 'string'
+          ? JSON.parse(walkthrough.behaviorRoutines || '{"routines":[],"notes":""}')
+          : walkthrough.behaviorRoutines as any || { routines: [], notes: "" },
         climate: walkthrough.climate || undefined,
         climateContributors: walkthrough.climateContributors || [],
         engagementLevel: walkthrough.engagementLevel || undefined,
         transitions: walkthrough.transitions || undefined,
         transitionComments: walkthrough.transitionComments || "",
-        effectivenessRatings: walkthrough.effectivenessRatings as any || {},
+        effectivenessRatings: typeof walkthrough.effectivenessRatings === 'string'
+          ? JSON.parse(walkthrough.effectivenessRatings || '{}')
+          : walkthrough.effectivenessRatings as any || {},
         strengths: walkthrough.strengths || "",
         areasForGrowth: walkthrough.areasForGrowth || "",
         additionalComments: walkthrough.additionalComments || "",
