@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, User, BookOpen, AlertCircle, Clock, CheckCircle, BarChart3, ArrowLeft } from "lucide-react";
+import { CalendarDays, User, BookOpen, AlertCircle, Clock, CheckCircle, BarChart3, ArrowLeft, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { WalkthroughWithDetails } from "@shared/schema";
@@ -26,6 +26,11 @@ export default function CoachDashboard() {
 
   const { data: completedReviews = [], isLoading: completedLoading } = useQuery<WalkthroughWithDetails[]>({
     queryKey: ['/api/reviews/completed'],
+  });
+
+  // Fetch weekly lesson plan submissions
+  const { data: weeklySubmissions = [], isLoading: submissionsLoading } = useQuery({
+    queryKey: ['/api/lesson-plans/weekly-submissions'],
   });
 
   // Start review mutation
@@ -273,7 +278,7 @@ export default function CoachDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Coach Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
             <div className="flex items-center">
               <AlertCircle className="h-8 w-8 text-orange-500" />
@@ -301,10 +306,22 @@ export default function CoachDashboard() {
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+            <div className="flex items-center">
+              <FileText className="h-8 w-8 text-purple-500" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Weekly Submissions</p>
+                <p className="text-2xl font-bold text-gray-900">{weeklySubmissions.length}</p>
+                <p className="text-xs text-gray-500">
+                  {weeklySubmissions.filter((s: any) => s.isLateSubmission).length} late
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
       <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm">
+        <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm">
           <TabsTrigger value="pending" className="flex items-center gap-2 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
             <AlertCircle className="h-4 w-4" />
             Pending Reviews ({pendingReviews.length})
@@ -316,6 +333,10 @@ export default function CoachDashboard() {
           <TabsTrigger value="completed" className="flex items-center gap-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
             <CheckCircle className="h-4 w-4" />
             Completed ({completedReviews.length})
+          </TabsTrigger>
+          <TabsTrigger value="submissions" className="flex items-center gap-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700">
+            <FileText className="h-4 w-4" />
+            Weekly Submissions ({weeklySubmissions.length})
           </TabsTrigger>
         </TabsList>
 
@@ -379,6 +400,86 @@ export default function CoachDashboard() {
                 "No completed reviews yet. Once you complete reviews, they'll appear here for reference.",
                 false,
                 'complete'
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="submissions">
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-purple-500" />
+                <span>Weekly Lesson Plan Submissions</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {submissionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : weeklySubmissions.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No submissions yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">Weekly lesson plan submissions will appear here once teachers submit them.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {weeklySubmissions.map((submission: any) => (
+                    <Card key={submission.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span className="font-semibold text-gray-900">{submission.teacherName}</span>
+                              <Badge variant={submission.isLateSubmission ? "destructive" : "default"}>
+                                {submission.isLateSubmission ? "Late" : "On Time"}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="h-3 w-3" />
+                                <span className="font-medium">{submission.title}</span>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <span>{submission.subject}</span>
+                                {submission.gradeLevel && (
+                                  <span className="text-gray-400">• Grade {submission.gradeLevel}</span>
+                                )}
+                              </div>
+                              
+                              {submission.submittedAt && (
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3" />
+                                  <span>Submitted: {formatDate(submission.submittedAt)}</span>
+                                  {submission.weekOfYear && (
+                                    <span className="text-gray-400">• Week {submission.weekOfYear}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/lesson-plan/${submission.id}`, '_blank')}
+                              className="flex items-center gap-2"
+                            >
+                              <FileText className="h-3 w-3" />
+                              View Plan
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>

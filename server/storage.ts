@@ -96,6 +96,7 @@ export interface IStorage {
     finalized: number;
     avgDuration: number;
   }>;
+  getLessonPlanSubmissions(): Promise<any[]>;
   deactivateSession(walkthroughId: string, userId: string): Promise<void>;
   
   // Statistics
@@ -1108,6 +1109,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLessonPlan(id: string): Promise<void> {
     await db.delete(lessonPlans).where(eq(lessonPlans.id, id));
+  }
+
+  async getLessonPlanSubmissions() {
+    const submissions = await db
+      .select({
+        id: lessonPlans.id,
+        title: lessonPlans.title,
+        subject: lessonPlans.subject,
+        gradeLevel: lessonPlans.gradeLevel,
+        status: lessonPlans.status,
+        submittedAt: lessonPlans.submittedAt,
+        weekOfYear: lessonPlans.weekOfYear,
+        isLateSubmission: lessonPlans.isLateSubmission,
+        coachNotified: lessonPlans.coachNotified,
+        teacherFirstName: teachers.firstName,
+        teacherLastName: teachers.lastName,
+        teacherEmail: teachers.email,
+        createdByFirstName: users.firstName,
+        createdByLastName: users.lastName,
+      })
+      .from(lessonPlans)
+      .leftJoin(teachers, eq(lessonPlans.teacherId, teachers.id))
+      .leftJoin(users, eq(lessonPlans.createdBy, users.id))
+      .where(eq(lessonPlans.status, 'submitted'))
+      .orderBy(desc(lessonPlans.submittedAt));
+
+    return submissions.map(submission => ({
+      ...submission,
+      teacherName: submission.teacherFirstName && submission.teacherLastName 
+        ? `${submission.teacherFirstName} ${submission.teacherLastName}`
+        : submission.createdByFirstName && submission.createdByLastName
+        ? `${submission.createdByFirstName} ${submission.createdByLastName}`
+        : 'Unknown Teacher',
+    }));
   }
 
   async getLessonPlanStats(createdBy: string): Promise<{
