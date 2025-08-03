@@ -9,7 +9,7 @@ import { emailService } from "./emailService";
 import { insertTeacherSchema, insertLocationSchema, insertWalkthroughSchema, insertLessonPlanSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
-import { extractLessonPlanData } from "./file-processor";
+import { extractLessonPlanData } from "./enhanced-file-processor";
 
 // Configure multer for file uploads
 const upload = multer({

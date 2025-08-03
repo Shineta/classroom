@@ -2,6 +2,19 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+interface ExtractedLessonData {
+  title?: string;
+  subject?: string;
+  gradeLevel?: string;
+  duration?: number;
+  objectives?: string;
+  activities?: string;
+  materials?: string;
+  lessonTopics?: string;
+  standardsCovered?: string[];
+  studentCount?: number;
+}
+
 export interface WalkthroughAnalysis {
   strengths: string;
   areasForGrowth: string;
@@ -149,17 +162,17 @@ Respond in JSON format only.`;
     const prompt = `
 You are an expert educational specialist. Extract lesson plan information from the following text and return it as a JSON object.
 
-Look for these fields:
-- title: The lesson title or activity name
-- subject: The subject area (e.g., Computer Science, Math, Science, English)
-- gradeLevel: Target grade level (e.g., "9-12", "High School")
-- duration: Time in minutes (estimate if not specified)
-- objectives: Learning objectives and goals
-- activities: Description of lesson activities
-- materials: Required materials and resources
-- lessonTopics: Key topics and concepts covered
-- standardsCovered: Educational standards referenced (as array)
-- studentCount: Estimated class size (number)
+Look for these fields and extract comprehensive information:
+- title: The lesson title or activity name (look for "Lesson Title", "Title", or similar headings)
+- subject: The subject area (look for "Subject Area", "Subject", etc.)
+- gradeLevel: Target grade level (look for "Grade Level", "Target Grade", etc.)
+- duration: Time in minutes (look for "Duration", "Time", "Length", etc.)
+- objectives: Learning objectives and goals (look for "Learning Objectives", "Objectives", "Students will", bullet points starting with action verbs)
+- activities: Description of lesson activities (look for "Activities", "Lesson Activities", "Procedures", numbered steps)
+- materials: Required materials and resources (look for "Materials", "Required Materials", "Resources", "Equipment")
+- lessonTopics: Key topics and concepts covered (look for "Topics", "Lesson Topics", "Key Concepts", "Content")
+- standardsCovered: Educational standards referenced (look for "Standards", "Standards Alignment", "AP Computer Science", "CSTA", "Common Core", etc.)
+- studentCount: Estimated class size (look for "Student Count", "Class Size", "Enrollment", etc.)
 
 Text to analyze:
 ${processedText}
@@ -180,7 +193,7 @@ Return only valid JSON in this format:
 
     try {
       console.log("Sending text to OpenAI for lesson plan extraction...");
-      const response = await this.openai.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
