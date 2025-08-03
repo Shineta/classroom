@@ -196,12 +196,18 @@ export default function CoachInsights() {
             <CardContent>
               {activityLoading ? (
                 <LoadingSpinner />
+              ) : observerActivity.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                  <Users className="h-12 w-12 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Observer Activity Data</h3>
+                  <p className="text-center">No walkthrough observations have been completed yet. Data will appear here once observers start conducting walkthroughs.</p>
+                </div>
               ) : (
                 <div className="space-y-6">
                   {/* Activity Chart */}
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={observerActivity}>
+                      <BarChart data={observerActivity.filter(item => !isNaN(item.walkthroughCount))}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="observerName" 
@@ -272,10 +278,21 @@ export default function CoachInsights() {
             <CardContent>
               {trendsLoading ? (
                 <LoadingSpinner />
+              ) : engagementTrends.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                  <TrendingUp className="h-12 w-12 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Engagement Trends Data</h3>
+                  <p className="text-center">No walkthrough observations have been completed yet. Engagement trends will appear here once data is available.</p>
+                </div>
               ) : (
                 <div className="h-96">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={engagementTrends}>
+                    <LineChart data={engagementTrends.filter(item => 
+                      !isNaN(item.studentEngagement) && 
+                      !isNaN(item.instructionalStrategies) && 
+                      !isNaN(item.classroomEnvironment) && 
+                      !isNaN(item.lessonDelivery)
+                    )}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
                         dataKey="date"
@@ -335,12 +352,18 @@ export default function CoachInsights() {
               <CardContent>
                 {subjectLoading ? (
                   <LoadingSpinner />
+                ) : subjectData.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                    <BookOpen className="h-12 w-12 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Subject Data</h3>
+                    <p className="text-center">No subject distribution data available yet.</p>
+                  </div>
                 ) : (
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={subjectData}
+                          data={subjectData.filter(item => !isNaN(item.count))}
                           cx="50%"
                           cy="50%"
                           outerRadius={100}
@@ -370,10 +393,16 @@ export default function CoachInsights() {
               <CardContent>
                 {subjectLoading ? (
                   <LoadingSpinner />
+                ) : subjectData.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                    <Star className="h-12 w-12 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Rating Data</h3>
+                    <p className="text-center">No subject rating data available yet.</p>
+                  </div>
                 ) : (
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={subjectData} layout="horizontal">
+                      <BarChart data={subjectData.filter(item => !isNaN(item.avgRating))} layout="horizontal">
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" domain={[0, 5]} />
                         <YAxis dataKey="subject" type="category" width={100} />
@@ -400,10 +429,18 @@ export default function CoachInsights() {
             <CardContent>
               {strengthsLoading ? (
                 <LoadingSpinner />
+              ) : strengthsGrowthData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                  <BarChart3 className="h-12 w-12 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Strength Pattern Data</h3>
+                  <p className="text-center">No strength pattern analysis available yet.</p>
+                </div>
               ) : (
                 <div className="h-96">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={strengthsGrowthData}>
+                    <BarChart data={strengthsGrowthData.filter(item => 
+                      !isNaN(item.strengths) && !isNaN(item.growthAreas)
+                    )}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="category" />
                       <YAxis />
