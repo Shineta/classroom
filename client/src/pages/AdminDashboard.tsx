@@ -39,7 +39,10 @@ import { insertUserSchema, insertTeacherSchema, insertLocationSchema } from "@sh
 
 // Form schemas
 const userFormSchema = insertUserSchema.omit({ profileImageUrl: true });
-const teacherFormSchema = insertTeacherSchema.omit({ id: true, createdAt: true, updatedAt: true });
+const teacherFormSchema = insertTeacherSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters")
+});
 const locationFormSchema = insertLocationSchema.omit({ id: true, createdAt: true, updatedAt: true });
 
 type UserFormData = z.infer<typeof userFormSchema>;
@@ -130,12 +133,13 @@ export default function AdminDashboard() {
 
   const createTeacherMutation = useMutation({
     mutationFn: async (teacherData: TeacherFormData) => {
-      const res = await apiRequest("POST", "/api/teachers", teacherData);
+      const res = await apiRequest("POST", "/api/teachers/create-with-account", teacherData);
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
-      toast({ title: "Teacher created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "Teacher and user account created successfully" });
     },
     onError: (error: Error) => {
       toast({ title: "Failed to create teacher", description: error.message, variant: "destructive" });
@@ -669,6 +673,34 @@ export default function AdminDashboard() {
                           </FormItem>
                         )}
                       />
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={teacherForm.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="teacher.lastname" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={teacherForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <FormField
                         control={teacherForm.control}
                         name="gradeLevel"

@@ -47,6 +47,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create teacher with user account
+  app.post("/api/teachers/create-with-account", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin permissions
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { username, password, firstName, lastName, email, gradeLevel, subjects } = req.body;
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+
+      // Check if email already exists for users (simplified check by getting all users)
+      if (email) {
+        const allUsers = await storage.getAllUsers();
+        const existingUserWithEmail = allUsers.find(u => u.email === email);
+        if (existingUserWithEmail) {
+          return res.status(400).json({ message: "Email already exists for another user account" });
+        }
+      }
+
+      // Hash the password (using simple hashing for now)
+      const { hashPassword } = await import('./auth');
+      const hashedPassword = await hashPassword(password);
+
+      // Create user account first
+      const userData = {
+        username,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        email,
+        role: 'teacher'
+      };
+
+      const user = await storage.createUser(userData);
+
+      // Create teacher record
+      const teacherData = {
+        firstName,
+        lastName,
+        email,
+        gradeLevel,
+        subjects: subjects || [],
+        active: true
+      };
+
+      const teacher = await storage.createTeacher(teacherData);
+
+      res.status(201).json({ 
+        message: "Teacher and user account created successfully",
+        teacher,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      console.error("Error creating teacher with account:", error);
+      res.status(400).json({ message: "Failed to create teacher and user account" });
+    }
+  });
+
   app.get("/api/teachers/search", isAuthenticated, async (req, res) => {
     try {
       const query = req.query.q as string;
